@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+// MatchCard component
 
 export interface MatchData {
   id: string;
@@ -8,7 +8,8 @@ export interface MatchData {
   awayLogo?: string;
   league: string;
   leagueLogo?: string;
-  kickOff: string;
+  kickOff: string; // display string like "19:45" or ISO date
+  kickOffDisplay?: string; // pre-formatted for SSR safety
   status: "upcoming" | "live" | "finished";
   homeScore?: number;
   awayScore?: number;
@@ -24,10 +25,9 @@ interface MatchCardProps {
 
 export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardProps) {
   const isLive = match.status === "live";
-  const kickOffTime = new Date(match.kickOff);
   const timeStr = isLive
     ? "LIVE"
-    : kickOffTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    : match.kickOffDisplay || match.kickOff;
 
   return (
     <div className="rounded-xl bg-card p-3">

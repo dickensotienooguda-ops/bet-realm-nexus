@@ -3,6 +3,9 @@ import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { MatchCard, type MatchData } from "@/components/MatchCard";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
+import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { fetchFixtures } from "@/lib/sportmonks.functions";
 
 export const Route = createFileRoute("/live")({
   head: () => ({
@@ -14,43 +17,28 @@ export const Route = createFileRoute("/live")({
   component: LivePage,
 });
 
-const liveMatches: MatchData[] = [
-  {
-    id: "l1",
-    homeTeam: "Kortrijk U21",
-    awayTeam: "Francs Borains",
-    league: "Belgium • Beloften Pro League",
-    kickOff: new Date().toISOString(),
-    status: "live",
-    homeScore: 0,
-    awayScore: 0,
-    markets: 8,
-    odds: { home: 1.30, draw: 5.25, away: 8.50 },
-  },
-  {
-    id: "l2",
-    homeTeam: "Gazişehir Gaziantep",
-    awayTeam: "Kayserispor",
-    league: "Turkey • Super Lig",
-    kickOff: new Date().toISOString(),
-    status: "live",
-    homeScore: 1,
-    awayScore: 0,
-    markets: 19,
-    odds: { home: 1.45, draw: 4.10, away: 6.50 },
-  },
-];
-
 const marketTabs = ["1×2 / Winner", "Over/Under", "GG/NG", "Double Chance"];
 
 function LivePage() {
   const betSlip = useBetSlip();
+  const [matches, setMatches] = useState<MatchData[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const selectedKeys = new Set(
     betSlip.selections.map((s) => getSelectionKey(s.matchId, s.selectionType))
   );
 
+  useEffect(() => {
+    fetchFixtures({ data: { live: true } })
+      .then((result) => {
+        setMatches((result.matches || []) as MatchData[]);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   const handleOddsClick = (matchId: string, selection: "home" | "draw" | "away", odds: number) => {
-    const match = liveMatches.find((m) => m.id === matchId);
+    const match = matches.find((m) => m.id === matchId);
     if (!match) return;
     addSelection({
       matchId,
@@ -65,7 +53,7 @@ function LivePage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <TopBar balance="0.00" currency="KES" />
+      <TopBar />
 
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-live" />
@@ -102,7 +90,18 @@ function LivePage() {
       </div>
 
       <div className="space-y-2 px-4">
-        {liveMatches.map((match) => (
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        )}
+        {!loading && matches.length === 0 && (
+          <div className="rounded-xl bg-card p-8 text-center">
+            <p className="text-sm text-muted-foreground">No live matches right now</p>
+            <p className="mt-1 text-xs text-muted-foreground">Check back during match hours</p>
+          </div>
+        )}
+        {matches.map((match) => (
           <MatchCard
             key={match.id}
             match={match}

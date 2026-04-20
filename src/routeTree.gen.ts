@@ -13,9 +13,14 @@ import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as VipRouteImport } from './routes/vip'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MyBetsRouteImport } from './routes/my-bets'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as BetslipRouteImport } from './routes/betslip'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiDepositRouteImport } from './routes/api/deposit'
+import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
+import { Route as ApiAdminRouteImport } from './routes/api/admin'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -37,6 +42,11 @@ const MyBetsRoute = MyBetsRouteImport.update({
   path: '/my-bets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LiveRoute = LiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -47,71 +57,133 @@ const BetslipRoute = BetslipRouteImport.update({
   path: '/betslip',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDepositRoute = ApiDepositRouteImport.update({
+  id: '/api/deposit',
+  path: '/api/deposit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCreateWalletRoute = ApiCreateWalletRouteImport.update({
+  id: '/api/create-wallet',
+  path: '/api/create-wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminRoute = ApiAdminRouteImport.update({
+  id: '/api/admin',
+  path: '/api/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
+  '/login': typeof LoginRoute
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/admin': typeof ApiAdminRoute
+  '/api/create-wallet': typeof ApiCreateWalletRoute
+  '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
+  '/login': typeof LoginRoute
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/admin': typeof ApiAdminRoute
+  '/api/create-wallet': typeof ApiCreateWalletRoute
+  '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
+  '/login': typeof LoginRoute
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/admin': typeof ApiAdminRoute
+  '/api/create-wallet': typeof ApiCreateWalletRoute
+  '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/betslip'
     | '/live'
+    | '/login'
     | '/my-bets'
     | '/profile'
     | '/vip'
     | '/wallet'
+    | '/api/admin'
+    | '/api/create-wallet'
+    | '/api/deposit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/betslip' | '/live' | '/my-bets' | '/profile' | '/vip' | '/wallet'
+  to:
+    | '/'
+    | '/admin'
+    | '/betslip'
+    | '/live'
+    | '/login'
+    | '/my-bets'
+    | '/profile'
+    | '/vip'
+    | '/wallet'
+    | '/api/admin'
+    | '/api/create-wallet'
+    | '/api/deposit'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/betslip'
     | '/live'
+    | '/login'
     | '/my-bets'
     | '/profile'
     | '/vip'
     | '/wallet'
+    | '/api/admin'
+    | '/api/create-wallet'
+    | '/api/deposit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   BetslipRoute: typeof BetslipRoute
   LiveRoute: typeof LiveRoute
+  LoginRoute: typeof LoginRoute
   MyBetsRoute: typeof MyBetsRoute
   ProfileRoute: typeof ProfileRoute
   VipRoute: typeof VipRoute
   WalletRoute: typeof WalletRoute
+  ApiAdminRoute: typeof ApiAdminRoute
+  ApiCreateWalletRoute: typeof ApiCreateWalletRoute
+  ApiDepositRoute: typeof ApiDepositRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -144,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyBetsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/live': {
       id: '/live'
       path: '/live'
@@ -158,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BetslipRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -165,17 +251,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/deposit': {
+      id: '/api/deposit'
+      path: '/api/deposit'
+      fullPath: '/api/deposit'
+      preLoaderRoute: typeof ApiDepositRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/create-wallet': {
+      id: '/api/create-wallet'
+      path: '/api/create-wallet'
+      fullPath: '/api/create-wallet'
+      preLoaderRoute: typeof ApiCreateWalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin': {
+      id: '/api/admin'
+      path: '/api/admin'
+      fullPath: '/api/admin'
+      preLoaderRoute: typeof ApiAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   BetslipRoute: BetslipRoute,
   LiveRoute: LiveRoute,
+  LoginRoute: LoginRoute,
   MyBetsRoute: MyBetsRoute,
   ProfileRoute: ProfileRoute,
   VipRoute: VipRoute,
   WalletRoute: WalletRoute,
+  ApiAdminRoute: ApiAdminRoute,
+  ApiCreateWalletRoute: ApiCreateWalletRoute,
+  ApiDepositRoute: ApiDepositRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

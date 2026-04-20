@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BottomNav } from "@/components/BottomNav";
-import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Clock } from "lucide-react";
+import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Clock, Loader2 } from "lucide-react";
 import { CategoryTabs } from "@/components/CategoryTabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { getWallet, getTransactions } from "@/lib/user.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({
@@ -23,32 +26,94 @@ const walletTabs = [
 const quickAmounts = [100, 200, 500, 1000, 2000, 5000, 10000];
 
 function WalletPage() {
+  const { session, user } = useAuth();
   const [activeTab, setActiveTab] = useState("deposit");
   const [amount, setAmount] = useState("");
+  const [balance, setBalance] = useState("0.00");
+  const [currency, setCurrency] = useState("KES");
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loadingTx, setLoadingTx] = useState(false);
+  const [depositMsg, setDepositMsg] = useState("");
+
+  useEffect(() => {
+    if (!session) return;
+    getWallet({ data: undefined as never, headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((res) => {
+        if (res.wallet) {
+          setBalance(Number(res.wallet.balance).toFixed(2));
+          setCurrency(res.wallet.currency_code);
+        }
+      });
+  }, [session]);
+
+  useEffect(() => {
+    if (!session || activeTab !== "history") return;
+    setLoadingTx(true);
+    getTransactions({ data: undefined as never, headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((res) => {
+        setTransactions(res.transactions || []);
+        setLoadingTx(false);
+      });
+  }, [session, activeTab]);
+
+  const handleDeposit = async () => {
+    if (!session || !amount) return;
+    // Mock deposit — credit wallet via API
+    const res = await fetch("/api/deposit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: parseFloat(amount) }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setDepositMsg(`Deposited ${currency} ${amount} successfully!`);
+      setBalance(Number(data.newBalance).toFixed(2));
+      setAmount("");
+    } else {
+      setDepositMsg(data.error || "Deposit failed");
+    }
+  };
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <Link to="/profile" className="rounded-lg bg-surface-elevated p-2"><ArrowLeft className="h-5 w-5" /></Link>
+          <h1 className="text-lg font-bold">Wallet</h1>
+          <div className="w-9" />
+        </div>
+        <div className="flex flex-col items-center px-4 pt-20">
+          <p className="text-sm text-muted-foreground">Login to access your wallet</p>
+          <Link to="/login" className="mt-4 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground">Login</Link>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <Link to="/profile" className="rounded-lg bg-surface-elevated p-2">
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
+        <Link to="/profile" className="rounded-lg bg-surface-elevated p-2"><ArrowLeft className="h-5 w-5" /></Link>
         <h1 className="text-lg font-bold">Wallet</h1>
         <div className="w-9" />
       </div>
 
-      {/* Balance */}
       <div className="mx-4 mt-4 rounded-xl bg-card p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase text-muted-foreground">Your Balance</p>
           <span className="rounded border border-primary px-2 py-0.5 text-xs font-bold text-primary">M-PESA</span>
         </div>
-        <p className="mt-1 text-3xl font-bold">KES 0.00</p>
+        <p className="mt-1 text-3xl font-bold">{currency} {balance}</p>
       </div>
 
       <div className="mt-4">
         <CategoryTabs tabs={walletTabs} activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
+
+      {depositMsg && (
+        <div className="mx-4 mt-2 rounded-xl bg-won/10 p-3 text-sm font-medium text-won">{depositMsg}</div>
+      )}
 
       {activeTab === "deposit" && (
         <div className="px-4 pt-2">
@@ -69,7 +134,7 @@ function WalletPage() {
 
           <p className="mb-2 mt-4 text-xs font-medium uppercase text-muted-foreground">Or Enter Custom</p>
           <div className="flex items-center rounded-lg bg-input px-3 py-3">
-            <span className="text-sm font-bold text-primary">KES</span>
+            <span className="text-sm font-bold text-primary">{currency}</span>
             <input
               type="number"
               value={amount}
@@ -79,15 +144,14 @@ function WalletPage() {
             />
           </div>
           <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-            <span>Min: KES 5</span>
-            <span>Max: KES 250,000</span>
+            <span>Min: {currency} 5</span>
+            <span>Max: {currency} 250,000</span>
           </div>
 
-          <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground">
-            ⚡ Enter Amount
+          <button onClick={handleDeposit} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground">
+            ⚡ Deposit {amount ? `${currency} ${amount}` : ""}
           </button>
 
-          {/* Paybill info */}
           <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
             <p className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">M</span>
@@ -100,7 +164,7 @@ function WalletPage() {
               </div>
               <div>
                 <p className="text-[10px] uppercase text-muted-foreground">Account Number</p>
-                <p className="text-lg font-bold text-primary">0797585941</p>
+                <p className="text-lg font-bold text-primary">{user?.user_metadata?.phone || "0797585941"}</p>
               </div>
             </div>
           </div>
@@ -110,7 +174,7 @@ function WalletPage() {
       {activeTab === "withdraw" && (
         <div className="px-4 pt-2">
           <div className="flex items-center rounded-lg bg-input px-3 py-3">
-            <span className="text-sm font-bold text-primary">KES</span>
+            <span className="text-sm font-bold text-primary">{currency}</span>
             <input
               type="number"
               placeholder="Enter withdrawal amount"
@@ -124,9 +188,42 @@ function WalletPage() {
       )}
 
       {activeTab === "history" && (
-        <div className="flex flex-col items-center px-4 pt-12">
-          <Clock className="mb-3 h-12 w-12 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No transactions yet</p>
+        <div className="px-4 pt-2">
+          {loadingTx && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          )}
+          {!loadingTx && transactions.length === 0 && (
+            <div className="flex flex-col items-center pt-12">
+              <Clock className="mb-3 h-12 w-12 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No transactions yet</p>
+            </div>
+          )}
+          {transactions.map((tx) => (
+            <div key={tx.id} className="flex items-center gap-3 border-b border-border py-3">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                Number(tx.amount) > 0 ? "bg-won/10" : "bg-destructive/10"
+              }`}>
+                {Number(tx.amount) > 0
+                  ? <ArrowDownLeft className="h-4 w-4 text-won" />
+                  : <ArrowUpRight className="h-4 w-4 text-destructive" />
+                }
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium capitalize">{tx.type}</p>
+                <p className="text-xs text-muted-foreground">{tx.description || tx.reference}</p>
+              </div>
+              <div className="text-right">
+                <p className={`text-sm font-bold ${Number(tx.amount) > 0 ? "text-won" : "text-destructive"}`}>
+                  {Number(tx.amount) > 0 ? "+" : ""}{currency} {Math.abs(Number(tx.amount)).toFixed(2)}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {new Date(tx.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
