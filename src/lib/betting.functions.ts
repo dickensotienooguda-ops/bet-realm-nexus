@@ -4,8 +4,8 @@ import { z } from "zod";
 
 const placeBetSchema = z.object({
   selections: z.array(z.object({
-    matchId: z.string().uuid(),
-    marketId: z.string().uuid(),
+    matchId: z.string().min(1).max(255),
+    marketId: z.string().min(1).max(255),
     outcomeKey: z.string().min(1).max(50),
     outcomeLabel: z.string().min(1).max(100),
     odds: z.number().min(1.01).max(10000),
