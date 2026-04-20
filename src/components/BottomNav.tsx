@@ -1,12 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Tv, FileText, ClipboardList, User } from "lucide-react";
+import { Home, Tv, FileText, ClipboardList, User, Gamepad2 } from "lucide-react";
 
 const navItems = [
   { to: "/" as const, icon: Home, label: "Home", isCenter: false },
   { to: "/live" as const, icon: Tv, label: "Live", isCenter: false },
   { to: "/betslip" as const, icon: FileText, label: "Betslip", isCenter: true },
+  { to: "/virtual" as const, icon: Gamepad2, label: "Virtual", isCenter: false },
   { to: "/my-bets" as const, icon: ClipboardList, label: "My Bets", isCenter: false },
-  { to: "/profile" as const, icon: User, label: "Profile", isCenter: false },
 ];
 
 export function BottomNav() {

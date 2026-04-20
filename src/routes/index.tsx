@@ -88,9 +88,9 @@ function HomePage() {
             <h2 className="text-lg font-bold text-primary-foreground">25% CASHBACK</h2>
             <p className="text-xs text-primary-foreground/80">On all sportsbook losses</p>
           </div>
-          <button className="rounded-lg bg-background px-4 py-2 text-sm font-bold text-foreground">
+          <Link to="/betslip" className="rounded-lg bg-background px-4 py-2 text-sm font-bold text-foreground">
             Bet Now →
-          </button>
+          </Link>
         </div>
       </div>
 
