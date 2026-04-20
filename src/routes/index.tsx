@@ -30,14 +30,15 @@ const quickLinks = [
   { icon: Trophy, label: "Ligi Kuu", color: "bg-surface-elevated" },
 ];
 
-// Mock matches for initial display
+// Mock matches for initial display (static times to avoid hydration mismatch)
 const mockMatches: MatchData[] = [
   {
     id: "m1",
     homeTeam: "Gor Mahia",
     awayTeam: "AFC Leopards",
     league: "Kenya • KPL",
-    kickOff: new Date(Date.now() + 3600000).toISOString(),
+    kickOff: "19:45",
+    kickOffDisplay: "19:45",
     status: "upcoming",
     markets: 86,
     odds: { home: 2.10, draw: 3.20, away: 3.50 },
@@ -47,7 +48,8 @@ const mockMatches: MatchData[] = [
     homeTeam: "Manchester United",
     awayTeam: "Liverpool",
     league: "England • Premier League",
-    kickOff: new Date(Date.now() + 7200000).toISOString(),
+    kickOff: "21:00",
+    kickOffDisplay: "21:00",
     status: "upcoming",
     markets: 240,
     odds: { home: 3.60, draw: 3.30, away: 2.17 },
@@ -57,7 +59,8 @@ const mockMatches: MatchData[] = [
     homeTeam: "Real Madrid",
     awayTeam: "Barcelona",
     league: "Spain • La Liga",
-    kickOff: new Date(Date.now() + 1800000).toISOString(),
+    kickOff: "LIVE",
+    kickOffDisplay: "LIVE",
     status: "live",
     homeScore: 1,
     awayScore: 0,
@@ -69,7 +72,8 @@ const mockMatches: MatchData[] = [
     homeTeam: "PSG",
     awayTeam: "Marseille",
     league: "France • Ligue 1",
-    kickOff: new Date(Date.now() + 14400000).toISOString(),
+    kickOff: "22:00",
+    kickOffDisplay: "22:00",
     status: "upcoming",
     markets: 156,
     odds: { home: 1.55, draw: 4.20, away: 5.50 },
