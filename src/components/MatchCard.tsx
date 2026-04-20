@@ -25,10 +25,9 @@ interface MatchCardProps {
 
 export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardProps) {
   const isLive = match.status === "live";
-  const kickOffTime = new Date(match.kickOff);
   const timeStr = isLive
     ? "LIVE"
-    : kickOffTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    : match.kickOffDisplay || match.kickOff;
 
   return (
     <div className="rounded-xl bg-card p-3">
