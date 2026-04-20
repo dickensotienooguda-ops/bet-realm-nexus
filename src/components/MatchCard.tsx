@@ -8,7 +8,8 @@ export interface MatchData {
   awayLogo?: string;
   league: string;
   leagueLogo?: string;
-  kickOff: string;
+  kickOff: string; // display string like "19:45" or ISO date
+  kickOffDisplay?: string; // pre-formatted for SSR safety
   status: "upcoming" | "live" | "finished";
   homeScore?: number;
   awayScore?: number;
