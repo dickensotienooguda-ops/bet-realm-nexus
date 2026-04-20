@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Users, CreditCard, BarChart3, Settings, Loader2 } from "lucide-react";
+import { ArrowLeft, Users, CreditCard, BarChart3, Settings, Loader2, Gavel } from "lucide-react";
 import { CategoryTabs } from "@/components/CategoryTabs";
+import { settleOpenBets } from "@/lib/settlement.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
