@@ -4,7 +4,10 @@ import { BottomNav } from "@/components/BottomNav";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { MatchCard, type MatchData } from "@/components/MatchCard";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
-import { Trophy, Zap, Star, Monitor } from "lucide-react";
+import { Trophy, Zap, Star, Monitor, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { fetchFixtures } from "@/lib/sportmonks.functions";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,77 +20,48 @@ export const Route = createFileRoute("/")({
 });
 
 const sportsTabs = [
-  { id: "soccer", label: "Soccer", count: 142 },
-  { id: "basketball", label: "Basketball", count: 38 },
-  { id: "tennis", label: "Tennis", count: 24 },
-  { id: "cricket", label: "Cricket", count: 12 },
+  { id: "soccer", label: "Soccer" },
+  { id: "basketball", label: "Basketball" },
+  { id: "tennis", label: "Tennis" },
+  { id: "cricket", label: "Cricket" },
 ];
 
 const quickLinks = [
   { icon: Zap, label: "Aviator", color: "bg-destructive" },
   { icon: Star, label: "Featured", color: "bg-surface-elevated" },
-  { icon: Monitor, label: "Live Game", color: "bg-surface-elevated" },
+  { icon: Monitor, label: "Live Game", color: "bg-surface-elevated", to: "/live" },
   { icon: Trophy, label: "Ligi Kuu", color: "bg-surface-elevated" },
-];
-
-// Mock matches for initial display (static times to avoid hydration mismatch)
-const mockMatches: MatchData[] = [
-  {
-    id: "m1",
-    homeTeam: "Gor Mahia",
-    awayTeam: "AFC Leopards",
-    league: "Kenya • KPL",
-    kickOff: "19:45",
-    kickOffDisplay: "19:45",
-    status: "upcoming",
-    markets: 86,
-    odds: { home: 2.10, draw: 3.20, away: 3.50 },
-  },
-  {
-    id: "m2",
-    homeTeam: "Manchester United",
-    awayTeam: "Liverpool",
-    league: "England • Premier League",
-    kickOff: "21:00",
-    kickOffDisplay: "21:00",
-    status: "upcoming",
-    markets: 240,
-    odds: { home: 3.60, draw: 3.30, away: 2.17 },
-  },
-  {
-    id: "m3",
-    homeTeam: "Real Madrid",
-    awayTeam: "Barcelona",
-    league: "Spain • La Liga",
-    kickOff: "LIVE",
-    kickOffDisplay: "LIVE",
-    status: "live",
-    homeScore: 1,
-    awayScore: 0,
-    markets: 180,
-    odds: { home: 1.85, draw: 3.60, away: 4.10 },
-  },
-  {
-    id: "m4",
-    homeTeam: "PSG",
-    awayTeam: "Marseille",
-    league: "France • Ligue 1",
-    kickOff: "22:00",
-    kickOffDisplay: "22:00",
-    status: "upcoming",
-    markets: 156,
-    odds: { home: 1.55, draw: 4.20, away: 5.50 },
-  },
 ];
 
 function HomePage() {
   const betSlip = useBetSlip();
+  const [matches, setMatches] = useState<MatchData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const selectedKeys = new Set(
     betSlip.selections.map((s) => getSelectionKey(s.matchId, s.selectionType))
   );
 
+  useEffect(() => {
+    fetchFixtures({ data: {} })
+      .then((result) => {
+        if (result.error) {
+          setError(result.error);
+        }
+        if (result.matches.length > 0) {
+          setMatches(result.matches as MatchData[]);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to load matches");
+        setLoading(false);
+      });
+  }, []);
+
   const handleOddsClick = (matchId: string, selection: "home" | "draw" | "away", odds: number) => {
-    const match = mockMatches.find((m) => m.id === matchId);
+    const match = matches.find((m) => m.id === matchId);
     if (!match) return;
     addSelection({
       matchId,
@@ -102,7 +76,7 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <TopBar balance="0.00" currency="KES" />
+      <TopBar />
 
       {/* Promo banner */}
       <div className="mx-4 mt-3 rounded-xl gradient-emerald p-4">
@@ -151,7 +125,18 @@ function HomePage() {
 
       {/* Match list */}
       <div className="space-y-2 px-4">
-        {mockMatches.map((match) => (
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        )}
+        {error && !loading && matches.length === 0 && (
+          <div className="rounded-xl bg-card p-6 text-center">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Showing demo data</p>
+          </div>
+        )}
+        {matches.map((match) => (
           <MatchCard
             key={match.id}
             match={match}
@@ -164,7 +149,7 @@ function HomePage() {
       {/* Floating bet counter */}
       {betSlip.selections.length > 0 && (
         <div className="fixed bottom-16 left-4 right-4 z-40 mx-auto max-w-lg">
-          <a href="/betslip" className="flex items-center justify-between rounded-xl bg-primary px-4 py-3 shadow-lg glow-emerald">
+          <Link to="/betslip" className="flex items-center justify-between rounded-xl bg-primary px-4 py-3 shadow-lg glow-emerald">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground text-sm font-bold text-primary">
                 {betSlip.selections.length}
@@ -176,7 +161,7 @@ function HomePage() {
             <span className="rounded-lg bg-primary-foreground px-4 py-1.5 text-sm font-bold text-primary">
               BET &gt;
             </span>
-          </a>
+          </Link>
         </div>
       )}
 

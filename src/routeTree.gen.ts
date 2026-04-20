@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as BetslipRouteImport } from './routes/betslip'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiDepositRouteImport } from './routes/api/deposit'
 import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
 
 const WalletRoute = WalletRouteImport.update({
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDepositRoute = ApiDepositRouteImport.update({
+  id: '/api/deposit',
+  path: '/api/deposit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCreateWalletRoute = ApiCreateWalletRouteImport.update({
   id: '/api/create-wallet',
   path: '/api/create-wallet',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
+  '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
+  '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
+  '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/vip'
     | '/wallet'
     | '/api/create-wallet'
+    | '/api/deposit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/vip'
     | '/wallet'
     | '/api/create-wallet'
+    | '/api/deposit'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/vip'
     | '/wallet'
     | '/api/create-wallet'
+    | '/api/deposit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   VipRoute: typeof VipRoute
   WalletRoute: typeof WalletRoute
   ApiCreateWalletRoute: typeof ApiCreateWalletRoute
+  ApiDepositRoute: typeof ApiDepositRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/deposit': {
+      id: '/api/deposit'
+      path: '/api/deposit'
+      fullPath: '/api/deposit'
+      preLoaderRoute: typeof ApiDepositRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/create-wallet': {
       id: '/api/create-wallet'
       path: '/api/create-wallet'
@@ -225,7 +245,17 @@ const rootRouteChildren: RootRouteChildren = {
   VipRoute: VipRoute,
   WalletRoute: WalletRoute,
   ApiCreateWalletRoute: ApiCreateWalletRoute,
+  ApiDepositRoute: ApiDepositRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

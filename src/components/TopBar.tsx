@@ -1,12 +1,29 @@
 import { Link } from "@tanstack/react-router";
 import { Bell, Search, Wallet } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-interface TopBarProps {
-  balance?: string;
-  currency?: string;
-}
+export function TopBar() {
+  const { user, session } = useAuth();
+  const [balance, setBalance] = useState("0.00");
+  const [currency, setCurrency] = useState("KES");
 
-export function TopBar({ balance = "0.00", currency = "KES" }: TopBarProps) {
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("wallets")
+      .select("balance, currency_code")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setBalance(Number(data.balance).toFixed(2));
+          setCurrency(data.currency_code);
+        }
+      });
+  }, [user]);
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
       <div className="flex items-center justify-between px-4 py-2.5">
@@ -19,13 +36,21 @@ export function TopBar({ balance = "0.00", currency = "KES" }: TopBarProps) {
 
         {/* Balance + Actions */}
         <div className="flex items-center gap-2">
-          <Link to="/wallet" className="flex items-center gap-1.5 rounded-full bg-surface-elevated px-3 py-1.5 text-sm font-semibold">
-            <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{currency} {balance}</span>
-          </Link>
-          <Link to="/wallet" className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
-            Deposit
-          </Link>
+          {session ? (
+            <>
+              <Link to="/wallet" className="flex items-center gap-1.5 rounded-full bg-surface-elevated px-3 py-1.5 text-sm font-semibold">
+                <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{currency} {balance}</span>
+              </Link>
+              <Link to="/wallet" className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
+                Deposit
+              </Link>
+            </>
+          ) : (
+            <Link to="/login" className="rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground">
+              Login
+            </Link>
+          )}
           <button className="rounded-lg bg-surface-elevated p-1.5">
             <Search className="h-4 w-4 text-muted-foreground" />
           </button>

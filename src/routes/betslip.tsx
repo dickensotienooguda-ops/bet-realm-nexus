@@ -1,9 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { useBetSlip, removeSelection, setStake, clearSlip, getTotalOdds, getPotentialPayout } from "@/lib/betslip-store";
 import { ShoppingCart, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { placeBet } from "@/lib/betting.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/betslip")({
   head: () => ({
@@ -17,7 +20,12 @@ export const Route = createFileRoute("/betslip")({
 
 function BetslipPage() {
   const betSlip = useBetSlip();
+  const { user, session } = useAuth();
+  const navigate = useNavigate();
   const [stakeInput, setStakeInput] = useState(betSlip.stake > 0 ? betSlip.stake.toString() : "");
+  const [placing, setPlacing] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
   const totalOdds = getTotalOdds(betSlip.selections);
   const stake = parseFloat(stakeInput) || 0;
   const payout = getPotentialPayout(betSlip.selections, stake);
@@ -29,10 +37,51 @@ function BetslipPage() {
 
   const quickStakes = [100, 200, 500, 1000, 2000, 5000];
 
-  if (betSlip.selections.length === 0) {
+  const handlePlaceBet = async () => {
+    if (!session) {
+      navigate({ to: "/login" });
+      return;
+    }
+    if (stake <= 0 || betSlip.selections.length === 0) return;
+
+    setPlacing(true);
+    setResult(null);
+
+    try {
+      // We need market IDs — for now create placeholder markets in DB via admin
+      // For the MVP, we'll create markets on-the-fly if they don't exist
+      const token = session.access_token;
+
+      const selectionsData = betSlip.selections.map((s) => ({
+        matchId: s.matchId || "00000000-0000-0000-0000-000000000000",
+        marketId: s.marketId || "00000000-0000-0000-0000-000000000000",
+        outcomeKey: s.selectionType,
+        outcomeLabel: s.selectionLabel,
+        odds: s.odds,
+      }));
+
+      const res = await placeBet({
+        data: { selections: selectionsData, stake },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.success) {
+        setResult({ success: true, message: `Bet placed! New balance: ${res.newBalance}` });
+        clearSlip();
+      } else {
+        setResult({ success: false, message: res.error || "Failed to place bet" });
+      }
+    } catch (err: any) {
+      setResult({ success: false, message: err.message || "Error placing bet" });
+    }
+
+    setPlacing(false);
+  };
+
+  if (betSlip.selections.length === 0 && !result) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <TopBar balance="0.00" currency="KES" />
+        <TopBar />
         <div className="flex flex-col items-center justify-center px-4 pt-32">
           <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-muted/20">
             <ShoppingCart className="h-10 w-10 text-emerald-muted" />
@@ -50,7 +99,7 @@ function BetslipPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <TopBar balance="0.00" currency="KES" />
+      <TopBar />
 
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
@@ -59,6 +108,13 @@ function BetslipPage() {
             <Trash2 className="h-3.5 w-3.5" /> Clear All
           </button>
         </div>
+
+        {/* Result message */}
+        {result && (
+          <div className={`mt-3 rounded-xl p-3 text-sm font-medium ${result.success ? "bg-won/10 text-won" : "bg-destructive/10 text-destructive"}`}>
+            {result.message}
+          </div>
+        )}
 
         {/* Selections */}
         <div className="mt-3 space-y-2">
@@ -129,10 +185,11 @@ function BetslipPage() {
 
         {/* Place bet button */}
         <button
-          disabled={stake <= 0}
+          onClick={handlePlaceBet}
+          disabled={stake <= 0 || placing}
           className="mt-4 w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground transition-opacity disabled:opacity-40"
         >
-          Place Bet — KES {stake.toFixed(2)}
+          {placing ? "Placing..." : !session ? "Login to Place Bet" : `Place Bet — KES ${stake.toFixed(2)}`}
         </button>
       </div>
 
