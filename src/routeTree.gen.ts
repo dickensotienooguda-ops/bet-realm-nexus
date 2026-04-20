@@ -9,8 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as VipRouteImport } from './routes/vip'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as MyBetsRouteImport } from './routes/my-bets'
+import { Route as LiveRouteImport } from './routes/live'
+import { Route as BetslipRouteImport } from './routes/betslip'
 import { Route as IndexRouteImport } from './routes/index'
 
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VipRoute = VipRouteImport.update({
+  id: '/vip',
+  path: '/vip',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyBetsRoute = MyBetsRouteImport.update({
+  id: '/my-bets',
+  path: '/my-bets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveRoute = LiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BetslipRoute = BetslipRouteImport.update({
+  id: '/betslip',
+  path: '/betslip',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +55,109 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/betslip': typeof BetslipRoute
+  '/live': typeof LiveRoute
+  '/my-bets': typeof MyBetsRoute
+  '/profile': typeof ProfileRoute
+  '/vip': typeof VipRoute
+  '/wallet': typeof WalletRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/betslip': typeof BetslipRoute
+  '/live': typeof LiveRoute
+  '/my-bets': typeof MyBetsRoute
+  '/profile': typeof ProfileRoute
+  '/vip': typeof VipRoute
+  '/wallet': typeof WalletRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/betslip': typeof BetslipRoute
+  '/live': typeof LiveRoute
+  '/my-bets': typeof MyBetsRoute
+  '/profile': typeof ProfileRoute
+  '/vip': typeof VipRoute
+  '/wallet': typeof WalletRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/betslip'
+    | '/live'
+    | '/my-bets'
+    | '/profile'
+    | '/vip'
+    | '/wallet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/betslip' | '/live' | '/my-bets' | '/profile' | '/vip' | '/wallet'
+  id:
+    | '__root__'
+    | '/'
+    | '/betslip'
+    | '/live'
+    | '/my-bets'
+    | '/profile'
+    | '/vip'
+    | '/wallet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BetslipRoute: typeof BetslipRoute
+  LiveRoute: typeof LiveRoute
+  MyBetsRoute: typeof MyBetsRoute
+  ProfileRoute: typeof ProfileRoute
+  VipRoute: typeof VipRoute
+  WalletRoute: typeof WalletRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vip': {
+      id: '/vip'
+      path: '/vip'
+      fullPath: '/vip'
+      preLoaderRoute: typeof VipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-bets': {
+      id: '/my-bets'
+      path: '/my-bets'
+      fullPath: '/my-bets'
+      preLoaderRoute: typeof MyBetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live': {
+      id: '/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof LiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/betslip': {
+      id: '/betslip'
+      path: '/betslip'
+      fullPath: '/betslip'
+      preLoaderRoute: typeof BetslipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,16 +170,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BetslipRoute: BetslipRoute,
+  LiveRoute: LiveRoute,
+  MyBetsRoute: MyBetsRoute,
+  ProfileRoute: ProfileRoute,
+  VipRoute: VipRoute,
+  WalletRoute: WalletRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
