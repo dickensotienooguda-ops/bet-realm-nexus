@@ -60,8 +60,38 @@ function formatKickOff(dateStr: string): string {
   }
 }
 
+function mapFixture(f: SportMonksFixture): MatchResponse {
+  const home = f.participants.find((p) => p.meta?.location === "home") || f.participants[0];
+  const away = f.participants.find((p) => p.meta?.location === "away") || f.participants[1];
+  const homeScore = f.scores?.find((s) => s.participant_id === home.id && s.description === "CURRENT")?.score?.goals ?? 0;
+  const awayScore = f.scores?.find((s) => s.participant_id === away.id && s.description === "CURRENT")?.score?.goals ?? 0;
+  const status = mapFixtureStatus(f.state?.short_name || "NS");
+
+  return {
+    id: f.id.toString(),
+    externalId: f.id,
+    homeTeam: home.name,
+    awayTeam: away.name,
+    homeLogo: home.image_path || "",
+    awayLogo: away.image_path || "",
+    league: `${f.league?.country?.name || ""} • ${f.league?.name || ""}`,
+    leagueLogo: f.league?.image_path || "",
+    kickOff: f.starting_at,
+    kickOffDisplay: status === "live" ? "LIVE" : formatKickOff(f.starting_at),
+    status,
+    homeScore,
+    awayScore,
+    markets: 14,
+    odds: {
+      home: +(1.5 + Math.random() * 3).toFixed(2),
+      draw: +(2.5 + Math.random() * 2).toFixed(2),
+      away: +(1.8 + Math.random() * 4).toFixed(2),
+    },
+  };
+}
+
 export const fetchFixtures = createServerFn({ method: "POST" })
-  .inputValidator((input: { date?: string; live?: boolean }) => input)
+  .inputValidator((input: { date?: string; live?: boolean; days?: number }) => input)
   .handler(async ({ data }) => {
     const apiKey = process.env.SPORTMONKS_API_KEY;
     if (!apiKey) {
@@ -71,55 +101,34 @@ export const fetchFixtures = createServerFn({ method: "POST" })
 
     try {
       const today = data.date || new Date().toISOString().split("T")[0];
-      const endpoint = data.live
-        ? "https://api.sportmonks.com/v3/football/livescores/inplay"
-        : `https://api.sportmonks.com/v3/football/fixtures/date/${today}`;
 
-      const url = `${endpoint}?api_token=${apiKey}&include=participants;scores;state;league.country&per_page=50`;
-
-      const res = await fetch(url);
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error(`SportMonks API error [${res.status}]: ${errText}`);
-        return { matches: [], error: `API error: ${res.status}` };
+      if (data.live) {
+        const url = `https://api.sportmonks.com/v3/football/livescores/inplay?api_token=${apiKey}&include=participants;scores;state;league.country&per_page=100`;
+        const res = await fetch(url);
+        if (!res.ok) return { matches: [], error: `API error: ${res.status}` };
+        const json = await res.json();
+        const fixtures: SportMonksFixture[] = (json.data || []).filter((f: any) => f.participants?.length >= 2);
+        return { matches: fixtures.map(mapFixture), error: null };
       }
 
-      const json = await res.json();
-      const fixtures: SportMonksFixture[] = json.data || [];
+      // Fetch today + tomorrow for more games
+      const dates = [today];
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      dates.push(tomorrow.toISOString().split("T")[0]);
 
-      const matches: MatchResponse[] = fixtures
-        .filter((f) => f.participants && f.participants.length >= 2)
-        .map((f) => {
-          const home = f.participants.find((p) => p.meta?.location === "home") || f.participants[0];
-          const away = f.participants.find((p) => p.meta?.location === "away") || f.participants[1];
-          const homeScore = f.scores?.find((s) => s.participant_id === home.id && s.description === "CURRENT")?.score?.goals ?? 0;
-          const awayScore = f.scores?.find((s) => s.participant_id === away.id && s.description === "CURRENT")?.score?.goals ?? 0;
-          const status = mapFixtureStatus(f.state?.short_name || "NS");
+      const allFixtures: SportMonksFixture[] = [];
+      for (const d of dates) {
+        const url = `https://api.sportmonks.com/v3/football/fixtures/date/${d}?api_token=${apiKey}&include=participants;scores;state;league.country&per_page=100`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          const fixtures = (json.data || []).filter((f: any) => f.participants?.length >= 2);
+          allFixtures.push(...fixtures);
+        }
+      }
 
-          return {
-            id: f.id.toString(),
-            externalId: f.id,
-            homeTeam: home.name,
-            awayTeam: away.name,
-            homeLogo: home.image_path || "",
-            awayLogo: away.image_path || "",
-            league: `${f.league?.country?.name || ""} • ${f.league?.name || ""}`,
-            leagueLogo: f.league?.image_path || "",
-            kickOff: f.starting_at,
-            kickOffDisplay: status === "live" ? "LIVE" : formatKickOff(f.starting_at),
-            status,
-            homeScore,
-            awayScore,
-            markets: Math.floor(Math.random() * 200) + 30, // placeholder count
-            odds: {
-              home: +(1.5 + Math.random() * 3).toFixed(2),
-              draw: +(2.5 + Math.random() * 2).toFixed(2),
-              away: +(1.8 + Math.random() * 4).toFixed(2),
-            },
-          };
-        });
-
-      return { matches, error: null };
+      return { matches: allFixtures.map(mapFixture), error: null };
     } catch (err) {
       console.error("SportMonks fetch error:", err);
       return { matches: [], error: "Failed to fetch fixtures" };
