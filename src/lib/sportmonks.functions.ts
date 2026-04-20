@@ -61,7 +61,7 @@ function formatKickOff(dateStr: string): string {
 }
 
 export const fetchFixtures = createServerFn({ method: "POST" })
-  .inputValidator((input: { date?: string; live?: boolean }) => input)
+  .inputValidator((input: { date?: string; live?: boolean; days?: number }) => input)
   .handler(async ({ data }) => {
     const apiKey = process.env.SPORTMONKS_API_KEY;
     if (!apiKey) {
@@ -71,11 +71,10 @@ export const fetchFixtures = createServerFn({ method: "POST" })
 
     try {
       const today = data.date || new Date().toISOString().split("T")[0];
-      const endpoint = data.live
-        ? "https://api.sportmonks.com/v3/football/livescores/inplay"
-        : `https://api.sportmonks.com/v3/football/fixtures/date/${today}`;
-
-      const url = `${endpoint}?api_token=${apiKey}&include=participants;scores;state;league.country&per_page=50`;
+      
+      if (data.live) {
+        const endpoint = "https://api.sportmonks.com/v3/football/livescores/inplay";
+        const url = `${endpoint}?api_token=${apiKey}&include=participants;scores;state;league.country&per_page=100`;
 
       const res = await fetch(url);
       if (!res.ok) {
