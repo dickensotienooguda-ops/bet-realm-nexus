@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { MatchCard, type MatchData } from "@/components/MatchCard";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
-import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Loader2, RefreshCw, Wifi } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchFixtures } from "@/lib/sportmonks.functions";
 
 export const Route = createFileRoute("/live")({
@@ -17,25 +17,47 @@ export const Route = createFileRoute("/live")({
   component: LivePage,
 });
 
-const marketTabs = ["1×2 / Winner", "Over/Under", "GG/NG", "Double Chance"];
+const POLL_INTERVAL = 30_000; // 30 seconds
 
 function LivePage() {
   const betSlip = useBetSlip();
   const [matches, setMatches] = useState<MatchData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const selectedKeys = new Set(
     betSlip.selections.map((s) => getSelectionKey(s.matchId, s.selectionType))
   );
 
-  useEffect(() => {
-    fetchFixtures({ data: { live: true } })
-      .then((result) => {
-        setMatches((result.matches || []) as MatchData[]);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  const loadMatches = useCallback(async (showLoader = false) => {
+    if (showLoader) setLoading(true);
+    setIsPolling(true);
+    try {
+      const result = await fetchFixtures({ data: { live: true } });
+      const liveMatches = (result.matches || []) as MatchData[];
+      setMatches(liveMatches);
+      setLastUpdated(new Date());
+    } catch {
+      // keep existing matches on error
+    }
+    setLoading(false);
+    setIsPolling(false);
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadMatches(true);
+  }, [loadMatches]);
+
+  // Auto-poll every 30s
+  useEffect(() => {
+    pollRef.current = setInterval(() => loadMatches(false), POLL_INTERVAL);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [loadMatches]);
 
   const handleOddsClick = (matchId: string, selection: "home" | "draw" | "away", odds: number) => {
     const match = matches.find((m) => m.id === matchId);
@@ -51,38 +73,50 @@ function LivePage() {
     });
   };
 
+  const formatLastUpdated = () => {
+    if (!lastUpdated) return "";
+    const secs = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
+    if (secs < 10) return "Just now";
+    if (secs < 60) return `${secs}s ago`;
+    return `${Math.floor(secs / 60)}m ago`;
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
 
+      {/* Header with live indicator */}
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-live" />
         <h1 className="text-lg font-bold">Live Games</h1>
-        <div className="ml-auto flex gap-2">
-          <button className="rounded-full bg-surface-elevated px-3 py-1.5 text-xs font-medium">Highlights</button>
-          <button className="rounded-full bg-surface-elevated px-3 py-1.5 text-xs font-medium">Sort By ↓</button>
+        <div className="ml-auto flex items-center gap-2">
+          {/* Live polling indicator */}
+          <div className="flex items-center gap-1 rounded-full bg-surface-elevated px-2.5 py-1">
+            <Wifi className={`h-3 w-3 ${isPolling ? "text-won animate-pulse" : "text-primary"}`} />
+            <span className="text-[10px] text-muted-foreground">{formatLastUpdated()}</span>
+          </div>
+          <button
+            onClick={() => loadMatches(false)}
+            disabled={isPolling}
+            className="rounded-full bg-surface-elevated p-1.5"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isPolling ? "animate-spin text-primary" : "text-muted-foreground"}`} />
+          </button>
         </div>
       </div>
 
-      {/* Market type tabs */}
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3">
-        {marketTabs.map((tab, i) => (
-          <button
-            key={tab}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
-              i === 0 ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      {/* Auto-refresh notice */}
+      <div className="mx-4 mb-3 flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
+        <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+        <span className="text-[10px] text-primary">
+          Odds & scores refresh every 30 seconds • {matches.length} live {matches.length === 1 ? "match" : "matches"}
+        </span>
       </div>
 
       {/* Odds header */}
       <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground">
-        <span>ODDS</span>
+        <span>LIVE ODDS</span>
         <div className="flex gap-6">
-          <span>MARKETS</span>
           <span>1</span>
           <span>X</span>
           <span>2</span>
@@ -97,8 +131,17 @@ function LivePage() {
         )}
         {!loading && matches.length === 0 && (
           <div className="rounded-xl bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">No live matches right now</p>
-            <p className="mt-1 text-xs text-muted-foreground">Check back during match hours</p>
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-elevated">
+              <Wifi className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium">No live matches right now</p>
+            <p className="mt-1 text-xs text-muted-foreground">Check back during match hours — we auto-poll every 30s</p>
+            <button
+              onClick={() => loadMatches(true)}
+              className="mt-4 rounded-xl bg-primary px-6 py-2 text-sm font-bold text-primary-foreground"
+            >
+              Refresh Now
+            </button>
           </div>
         )}
         {matches.map((match) => (
@@ -110,6 +153,25 @@ function LivePage() {
           />
         ))}
       </div>
+
+      {/* Floating betslip */}
+      {betSlip.selections.length > 0 && (
+        <div className="fixed bottom-16 left-4 right-4 z-40 mx-auto max-w-lg">
+          <Link to="/betslip" className="flex items-center justify-between rounded-xl bg-primary px-4 py-3 shadow-lg glow-emerald">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground text-sm font-bold text-primary">
+                {betSlip.selections.length}
+              </span>
+              <span className="text-sm font-bold text-primary-foreground">
+                {betSlip.selections.reduce((a, s) => a * s.odds, 1).toFixed(2)} ODDS
+              </span>
+            </div>
+            <span className="rounded-lg bg-primary-foreground px-4 py-1.5 text-sm font-bold text-primary">
+              BET &gt;
+            </span>
+          </Link>
+        </div>
+      )}
 
       <BottomNav />
     </div>
