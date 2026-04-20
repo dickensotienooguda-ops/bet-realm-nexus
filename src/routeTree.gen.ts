@@ -13,9 +13,11 @@ import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as VipRouteImport } from './routes/vip'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MyBetsRouteImport } from './routes/my-bets'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as BetslipRouteImport } from './routes/betslip'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -37,6 +39,11 @@ const MyBetsRoute = MyBetsRouteImport.update({
   path: '/my-bets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LiveRoute = LiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -52,34 +59,45 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCreateWalletRoute = ApiCreateWalletRouteImport.update({
+  id: '/api/create-wallet',
+  path: '/api/create-wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
+  '/login': typeof LoginRoute
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/create-wallet': typeof ApiCreateWalletRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
+  '/login': typeof LoginRoute
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/create-wallet': typeof ApiCreateWalletRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
+  '/login': typeof LoginRoute
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/create-wallet': typeof ApiCreateWalletRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,31 +105,46 @@ export interface FileRouteTypes {
     | '/'
     | '/betslip'
     | '/live'
+    | '/login'
     | '/my-bets'
     | '/profile'
     | '/vip'
     | '/wallet'
+    | '/api/create-wallet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/betslip' | '/live' | '/my-bets' | '/profile' | '/vip' | '/wallet'
+  to:
+    | '/'
+    | '/betslip'
+    | '/live'
+    | '/login'
+    | '/my-bets'
+    | '/profile'
+    | '/vip'
+    | '/wallet'
+    | '/api/create-wallet'
   id:
     | '__root__'
     | '/'
     | '/betslip'
     | '/live'
+    | '/login'
     | '/my-bets'
     | '/profile'
     | '/vip'
     | '/wallet'
+    | '/api/create-wallet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BetslipRoute: typeof BetslipRoute
   LiveRoute: typeof LiveRoute
+  LoginRoute: typeof LoginRoute
   MyBetsRoute: typeof MyBetsRoute
   ProfileRoute: typeof ProfileRoute
   VipRoute: typeof VipRoute
   WalletRoute: typeof WalletRoute
+  ApiCreateWalletRoute: typeof ApiCreateWalletRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -144,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyBetsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/live': {
       id: '/live'
       path: '/live'
@@ -165,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/create-wallet': {
+      id: '/api/create-wallet'
+      path: '/api/create-wallet'
+      fullPath: '/api/create-wallet'
+      preLoaderRoute: typeof ApiCreateWalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -172,11 +219,22 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BetslipRoute: BetslipRoute,
   LiveRoute: LiveRoute,
+  LoginRoute: LoginRoute,
   MyBetsRoute: MyBetsRoute,
   ProfileRoute: ProfileRoute,
   VipRoute: VipRoute,
   WalletRoute: WalletRoute,
+  ApiCreateWalletRoute: ApiCreateWalletRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
