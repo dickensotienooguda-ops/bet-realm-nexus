@@ -16,9 +16,11 @@ import { Route as MyBetsRouteImport } from './routes/my-bets'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as BetslipRouteImport } from './routes/betslip'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiDepositRouteImport } from './routes/api/deposit'
 import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
+import { Route as ApiAdminRouteImport } from './routes/api/admin'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -55,6 +57,11 @@ const BetslipRoute = BetslipRouteImport.update({
   path: '/betslip',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -70,9 +77,15 @@ const ApiCreateWalletRoute = ApiCreateWalletRouteImport.update({
   path: '/api/create-wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminRoute = ApiAdminRouteImport.update({
+  id: '/api/admin',
+  path: '/api/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
   '/login': typeof LoginRoute
@@ -80,11 +93,13 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
   '/login': typeof LoginRoute
@@ -92,12 +107,14 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/betslip': typeof BetslipRoute
   '/live': typeof LiveRoute
   '/login': typeof LoginRoute
@@ -105,6 +122,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
   '/wallet': typeof WalletRoute
+  '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
 }
@@ -112,6 +130,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/betslip'
     | '/live'
     | '/login'
@@ -119,11 +138,13 @@ export interface FileRouteTypes {
     | '/profile'
     | '/vip'
     | '/wallet'
+    | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/betslip'
     | '/live'
     | '/login'
@@ -131,11 +152,13 @@ export interface FileRouteTypes {
     | '/profile'
     | '/vip'
     | '/wallet'
+    | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/betslip'
     | '/live'
     | '/login'
@@ -143,12 +166,14 @@ export interface FileRouteTypes {
     | '/profile'
     | '/vip'
     | '/wallet'
+    | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   BetslipRoute: typeof BetslipRoute
   LiveRoute: typeof LiveRoute
   LoginRoute: typeof LoginRoute
@@ -156,6 +181,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   VipRoute: typeof VipRoute
   WalletRoute: typeof WalletRoute
+  ApiAdminRoute: typeof ApiAdminRoute
   ApiCreateWalletRoute: typeof ApiCreateWalletRoute
   ApiDepositRoute: typeof ApiDepositRoute
 }
@@ -211,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BetslipRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -232,11 +265,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCreateWalletRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin': {
+      id: '/api/admin'
+      path: '/api/admin'
+      fullPath: '/api/admin'
+      preLoaderRoute: typeof ApiAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   BetslipRoute: BetslipRoute,
   LiveRoute: LiveRoute,
   LoginRoute: LoginRoute,
@@ -244,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   VipRoute: VipRoute,
   WalletRoute: WalletRoute,
+  ApiAdminRoute: ApiAdminRoute,
   ApiCreateWalletRoute: ApiCreateWalletRoute,
   ApiDepositRoute: ApiDepositRoute,
 }

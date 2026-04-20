@@ -86,7 +86,7 @@ function ProfilePage() {
           </div>
           <div>
             <p className="text-lg font-bold">{phone}</p>
-            <p className="text-xs text-muted-foreground">Member since {new Date(user.created_at).getFullYear()}</p>
+            <p className="text-xs text-muted-foreground">Member since {new Date(user?.created_at || Date.now()).getFullYear()}</p>
           </div>
         </div>
       </div>
