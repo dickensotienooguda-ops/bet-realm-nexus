@@ -18,6 +18,7 @@ import { Route as LiveRouteImport } from './routes/live'
 import { Route as BetslipRouteImport } from './routes/betslip'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HooksSettleRouteImport } from './routes/hooks/settle'
 import { Route as ApiDepositRouteImport } from './routes/api/deposit'
 import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
@@ -67,6 +68,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HooksSettleRoute = HooksSettleRouteImport.update({
+  id: '/hooks/settle',
+  path: '/hooks/settle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDepositRoute = ApiDepositRouteImport.update({
   id: '/api/deposit',
   path: '/api/deposit',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/hooks/settle': typeof HooksSettleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/hooks/settle': typeof HooksSettleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/hooks/settle': typeof HooksSettleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/hooks/settle'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/hooks/settle'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/hooks/settle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   ApiAdminRoute: typeof ApiAdminRoute
   ApiCreateWalletRoute: typeof ApiCreateWalletRoute
   ApiDepositRoute: typeof ApiDepositRoute
+  HooksSettleRoute: typeof HooksSettleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hooks/settle': {
+      id: '/hooks/settle'
+      path: '/hooks/settle'
+      fullPath: '/hooks/settle'
+      preLoaderRoute: typeof HooksSettleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/deposit': {
       id: '/api/deposit'
       path: '/api/deposit'
@@ -288,7 +308,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminRoute: ApiAdminRoute,
   ApiCreateWalletRoute: ApiCreateWalletRoute,
   ApiDepositRoute: ApiDepositRoute,
+  HooksSettleRoute: HooksSettleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
