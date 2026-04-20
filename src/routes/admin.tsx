@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Users, CreditCard, BarChart3, Settings, Loader2 } from "lucide-react";
+import { ArrowLeft, Users, CreditCard, BarChart3, Settings, Loader2, Gavel } from "lucide-react";
 import { CategoryTabs } from "@/components/CategoryTabs";
+import { settleOpenBets } from "@/lib/settlement.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -142,25 +143,73 @@ function AdminPage() {
         )}
 
         {!loading && activeTab === "settings" && (
-          <div className="space-y-3">
-            <div className="rounded-xl bg-card p-4">
-              <h3 className="text-sm font-semibold">Countries</h3>
-              <p className="text-xs text-muted-foreground">KE (Kenya), NG (Nigeria), TZ (Tanzania)</p>
-            </div>
-            <div className="rounded-xl bg-card p-4">
-              <h3 className="text-sm font-semibold">VIP Tiers</h3>
-              <p className="text-xs text-muted-foreground">Bronze → Silver → Gold → Platinum → Elite</p>
-            </div>
-            <div className="rounded-xl bg-card p-4">
-              <h3 className="text-sm font-semibold">Payment Methods</h3>
-              <p className="text-xs text-muted-foreground">M-PESA, Airtel Money, OPay, Tigo Pesa, Bank Transfer</p>
-            </div>
-          </div>
+          <SettlementSettings />
         )}
 
         {!loading && data.length === 0 && activeTab !== "settings" && (
           <div className="py-12 text-center text-sm text-muted-foreground">No data yet</div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function SettlementSettings() {
+  const [settling, setSettling] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  const handleSettle = async () => {
+    setSettling(true);
+    setResult(null);
+    try {
+      const res = await settleOpenBets();
+      setResult(res);
+    } catch (err: any) {
+      setResult({ errors: [err.message] });
+    }
+    setSettling(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl bg-card p-4">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Gavel className="h-4 w-4 text-primary" /> Settlement Engine
+        </h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Check finished matches and settle open bets. Pays out winners automatically.
+        </p>
+        <button
+          onClick={handleSettle}
+          disabled={settling}
+          className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+        >
+          {settling ? "Settling..." : "Run Settlement Now"}
+        </button>
+        {result && (
+          <div className="mt-3 rounded-lg bg-surface-elevated p-3 text-xs space-y-1">
+            <p>Settled: <span className="font-bold">{result.settledBets ?? 0}</span> bets</p>
+            <p>Paid out: <span className="font-bold text-won">{result.paidOut ?? 0}</span> winners</p>
+            <p>Total payout: <span className="font-bold text-won">KES {(result.totalPayout ?? 0).toLocaleString()}</span></p>
+            {result.errors?.length > 0 && (
+              <div className="mt-1 text-destructive">
+                {result.errors.map((e: string, i: number) => <p key={i}>⚠ {e}</p>)}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="rounded-xl bg-card p-4">
+        <h3 className="text-sm font-semibold">Countries</h3>
+        <p className="text-xs text-muted-foreground">KE (Kenya), NG (Nigeria), TZ (Tanzania)</p>
+      </div>
+      <div className="rounded-xl bg-card p-4">
+        <h3 className="text-sm font-semibold">VIP Tiers</h3>
+        <p className="text-xs text-muted-foreground">Bronze → Silver → Gold → Platinum → Elite</p>
+      </div>
+      <div className="rounded-xl bg-card p-4">
+        <h3 className="text-sm font-semibold">Payment Methods</h3>
+        <p className="text-xs text-muted-foreground">M-PESA, Airtel Money, OPay, Tigo Pesa, Bank Transfer</p>
       </div>
     </div>
   );
