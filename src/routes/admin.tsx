@@ -143,20 +143,7 @@ function AdminPage() {
         )}
 
         {!loading && activeTab === "settings" && (
-          <div className="space-y-3">
-            <div className="rounded-xl bg-card p-4">
-              <h3 className="text-sm font-semibold">Countries</h3>
-              <p className="text-xs text-muted-foreground">KE (Kenya), NG (Nigeria), TZ (Tanzania)</p>
-            </div>
-            <div className="rounded-xl bg-card p-4">
-              <h3 className="text-sm font-semibold">VIP Tiers</h3>
-              <p className="text-xs text-muted-foreground">Bronze → Silver → Gold → Platinum → Elite</p>
-            </div>
-            <div className="rounded-xl bg-card p-4">
-              <h3 className="text-sm font-semibold">Payment Methods</h3>
-              <p className="text-xs text-muted-foreground">M-PESA, Airtel Money, OPay, Tigo Pesa, Bank Transfer</p>
-            </div>
-          </div>
+          <SettingsTab />
         )}
 
         {!loading && data.length === 0 && activeTab !== "settings" && (
