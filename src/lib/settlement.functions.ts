@@ -166,8 +166,8 @@ export async function runSettlement(): Promise<SettlementResult> {
     const result = matchResults.get(sel.match_id);
     if (!result || !result.finished) continue;
 
-    const winningKey = determine1X2Winner(result.homeScore, result.awayScore);
-    const selResult = sel.outcome_key === winningKey ? "won" : "lost";
+    const won = doesOutcomeWin(sel.outcome_key, result.homeScore, result.awayScore);
+    const selResult = won ? "won" : "lost";
 
     const { error: updateErr } = await admin
       .from("bet_selections")
