@@ -1,4 +1,4 @@
-// MatchCard component
+import { Link } from "@tanstack/react-router";
 
 export interface MatchData {
   id: string;
@@ -8,8 +8,8 @@ export interface MatchData {
   awayLogo?: string;
   league: string;
   leagueLogo?: string;
-  kickOff: string; // display string like "19:45" or ISO date
-  kickOffDisplay?: string; // pre-formatted for SSR safety
+  kickOff: string;
+  kickOffDisplay?: string;
   status: "upcoming" | "live" | "finished";
   homeScore?: number;
   awayScore?: number;
@@ -25,9 +25,9 @@ interface MatchCardProps {
 
 export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardProps) {
   const isLive = match.status === "live";
-  const timeStr = isLive
-    ? "LIVE"
-    : match.kickOffDisplay || match.kickOff;
+  const timeStr = isLive ? "LIVE" : match.kickOffDisplay || match.kickOff;
+
+  const detailLink = `/match/${match.id}?home=${encodeURIComponent(match.homeTeam)}&away=${encodeURIComponent(match.awayTeam)}&league=${encodeURIComponent(match.league)}${match.odds ? `&ho=${match.odds.home}&do=${match.odds.draw}&ao=${match.odds.away}` : ""}`;
 
   return (
     <div className="rounded-xl bg-card p-3">
@@ -38,13 +38,15 @@ export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardP
           {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live" />}
           <span className={isLive ? "font-semibold text-live" : ""}>{timeStr}</span>
           {match.markets && (
-            <span className="text-primary">+{match.markets}</span>
+            <Link to={detailLink as any} className="text-primary hover:underline">
+              +{match.markets}
+            </Link>
           )}
         </div>
       </div>
 
-      {/* Teams */}
-      <div className="mb-3 space-y-1">
+      {/* Teams — clickable to detail */}
+      <Link to={detailLink as any} className="mb-3 block space-y-1">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">{match.homeTeam}</span>
           {(isLive || match.status === "finished") && (
@@ -57,7 +59,7 @@ export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardP
             <span className="text-sm font-bold">{match.awayScore}</span>
           )}
         </div>
-      </div>
+      </Link>
 
       {/* Odds */}
       {match.odds && (

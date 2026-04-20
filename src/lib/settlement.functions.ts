@@ -9,12 +9,49 @@ interface SettlementResult {
 }
 
 /**
- * Determines the winning outcome_key for a 1X2 market given final scores.
+ * Determines if an outcome_key wins given final scores and market context.
  */
-function determine1X2Winner(homeGoals: number, awayGoals: number): string {
-  if (homeGoals > awayGoals) return "home";
-  if (awayGoals > homeGoals) return "away";
-  return "draw";
+function doesOutcomeWin(outcomeKey: string, homeGoals: number, awayGoals: number): boolean {
+  const totalGoals = homeGoals + awayGoals;
+  const k = outcomeKey.toLowerCase();
+
+  // 1X2
+  if (k === "home") return homeGoals > awayGoals;
+  if (k === "away") return awayGoals > homeGoals;
+  if (k === "draw") return homeGoals === awayGoals;
+
+  // Double Chance
+  if (k === "1x") return homeGoals >= awayGoals;
+  if (k === "x2") return awayGoals >= homeGoals;
+  if (k === "12") return homeGoals !== awayGoals;
+
+  // Over/Under
+  if (k === "over" || k.startsWith("over")) return totalGoals > 2.5; // default 2.5
+  if (k === "under" || k.startsWith("under")) return totalGoals < 2.5;
+
+  // BTTS
+  if (k === "yes") return homeGoals > 0 && awayGoals > 0;
+  if (k === "no") return homeGoals === 0 || awayGoals === 0;
+
+  // Correct Score (e.g. "1-0", "2-1")
+  if (/^\d+-\d+$/.test(k)) {
+    const [h, a] = k.split("-").map(Number);
+    return homeGoals === h && awayGoals === a;
+  }
+
+  // HT/FT combos (simplified — can't know HT from FT score, mark as void)
+  if (k.includes("/")) return false;
+
+  // Draw No Bet — same as 1X2 but draw = void (handled at bet level)
+  // Total goals exact
+  if (k === "0") return totalGoals === 0;
+  if (k === "1") return totalGoals === 1;
+  if (k === "2") return totalGoals === 2;
+  if (k === "3") return totalGoals === 3;
+  if (k === "4+") return totalGoals >= 4;
+
+  // Default: can't determine, mark as loss
+  return false;
 }
 
 /**
@@ -129,8 +166,8 @@ export async function runSettlement(): Promise<SettlementResult> {
     const result = matchResults.get(sel.match_id);
     if (!result || !result.finished) continue;
 
-    const winningKey = determine1X2Winner(result.homeScore, result.awayScore);
-    const selResult = sel.outcome_key === winningKey ? "won" : "lost";
+    const won = doesOutcomeWin(sel.outcome_key, result.homeScore, result.awayScore);
+    const selResult = won ? "won" : "lost";
 
     const { error: updateErr } = await admin
       .from("bet_selections")

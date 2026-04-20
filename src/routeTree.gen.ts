@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as VirtualRouteImport } from './routes/virtual'
 import { Route as VipRouteImport } from './routes/vip'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MyBetsRouteImport } from './routes/my-bets'
@@ -18,6 +19,7 @@ import { Route as LiveRouteImport } from './routes/live'
 import { Route as BetslipRouteImport } from './routes/betslip'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MatchMatchIdRouteImport } from './routes/match.$matchId'
 import { Route as HooksSettleRouteImport } from './routes/hooks/settle'
 import { Route as ApiDepositRouteImport } from './routes/api/deposit'
 import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
@@ -26,6 +28,11 @@ import { Route as ApiAdminRouteImport } from './routes/api/admin'
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VirtualRoute = VirtualRouteImport.update({
+  id: '/virtual',
+  path: '/virtual',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VipRoute = VipRouteImport.update({
@@ -68,6 +75,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MatchMatchIdRoute = MatchMatchIdRouteImport.update({
+  id: '/match/$matchId',
+  path: '/match/$matchId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HooksSettleRoute = HooksSettleRouteImport.update({
   id: '/hooks/settle',
   path: '/hooks/settle',
@@ -98,11 +110,13 @@ export interface FileRoutesByFullPath {
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
+  '/virtual': typeof VirtualRoute
   '/wallet': typeof WalletRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
   '/hooks/settle': typeof HooksSettleRoute
+  '/match/$matchId': typeof MatchMatchIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -113,11 +127,13 @@ export interface FileRoutesByTo {
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
+  '/virtual': typeof VirtualRoute
   '/wallet': typeof WalletRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
   '/hooks/settle': typeof HooksSettleRoute
+  '/match/$matchId': typeof MatchMatchIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -129,11 +145,13 @@ export interface FileRoutesById {
   '/my-bets': typeof MyBetsRoute
   '/profile': typeof ProfileRoute
   '/vip': typeof VipRoute
+  '/virtual': typeof VirtualRoute
   '/wallet': typeof WalletRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
   '/hooks/settle': typeof HooksSettleRoute
+  '/match/$matchId': typeof MatchMatchIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -146,11 +164,13 @@ export interface FileRouteTypes {
     | '/my-bets'
     | '/profile'
     | '/vip'
+    | '/virtual'
     | '/wallet'
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
     | '/hooks/settle'
+    | '/match/$matchId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -161,11 +181,13 @@ export interface FileRouteTypes {
     | '/my-bets'
     | '/profile'
     | '/vip'
+    | '/virtual'
     | '/wallet'
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
     | '/hooks/settle'
+    | '/match/$matchId'
   id:
     | '__root__'
     | '/'
@@ -176,11 +198,13 @@ export interface FileRouteTypes {
     | '/my-bets'
     | '/profile'
     | '/vip'
+    | '/virtual'
     | '/wallet'
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
     | '/hooks/settle'
+    | '/match/$matchId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -192,11 +216,13 @@ export interface RootRouteChildren {
   MyBetsRoute: typeof MyBetsRoute
   ProfileRoute: typeof ProfileRoute
   VipRoute: typeof VipRoute
+  VirtualRoute: typeof VirtualRoute
   WalletRoute: typeof WalletRoute
   ApiAdminRoute: typeof ApiAdminRoute
   ApiCreateWalletRoute: typeof ApiCreateWalletRoute
   ApiDepositRoute: typeof ApiDepositRoute
   HooksSettleRoute: typeof HooksSettleRoute
+  MatchMatchIdRoute: typeof MatchMatchIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -206,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/wallet'
       fullPath: '/wallet'
       preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/virtual': {
+      id: '/virtual'
+      path: '/virtual'
+      fullPath: '/virtual'
+      preLoaderRoute: typeof VirtualRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vip': {
@@ -264,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/match/$matchId': {
+      id: '/match/$matchId'
+      path: '/match/$matchId'
+      fullPath: '/match/$matchId'
+      preLoaderRoute: typeof MatchMatchIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hooks/settle': {
       id: '/hooks/settle'
       path: '/hooks/settle'
@@ -304,11 +344,13 @@ const rootRouteChildren: RootRouteChildren = {
   MyBetsRoute: MyBetsRoute,
   ProfileRoute: ProfileRoute,
   VipRoute: VipRoute,
+  VirtualRoute: VirtualRoute,
   WalletRoute: WalletRoute,
   ApiAdminRoute: ApiAdminRoute,
   ApiCreateWalletRoute: ApiCreateWalletRoute,
   ApiDepositRoute: ApiDepositRoute,
   HooksSettleRoute: HooksSettleRoute,
+  MatchMatchIdRoute: MatchMatchIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
