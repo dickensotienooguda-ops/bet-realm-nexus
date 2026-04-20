@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+// MatchCard component
 
 export interface MatchData {
   id: string;
