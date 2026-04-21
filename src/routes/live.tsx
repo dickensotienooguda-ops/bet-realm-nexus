@@ -17,7 +17,7 @@ export const Route = createFileRoute("/live")({
   component: LivePage,
 });
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 15_000; // 15 seconds
 
 function LivePage() {
   const betSlip = useBetSlip();
