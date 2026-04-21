@@ -3,8 +3,9 @@ import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
 import { generateMarkets, type Market } from "@/lib/markets";
-import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { fetchFixtureDetails } from "@/lib/sportmonks.functions";
+import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/match/$matchId")({
   head: () => ({
@@ -20,13 +21,49 @@ function MatchDetailPage() {
   const { matchId } = Route.useParams();
   const navigate = useNavigate();
   const betSlip = useBetSlip();
+
+  // Parse query params for initial display
   const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-  const homeTeam = searchParams.get("home") || "Home Team";
-  const awayTeam = searchParams.get("away") || "Away Team";
-  const league = searchParams.get("league") || "League";
-  const homeOdds = parseFloat(searchParams.get("ho") || "0") || undefined;
-  const drawOdds = parseFloat(searchParams.get("do") || "0") || undefined;
-  const awayOdds = parseFloat(searchParams.get("ao") || "0") || undefined;
+  const initialHome = searchParams.get("home") || "Home Team";
+  const initialAway = searchParams.get("away") || "Away Team";
+  const initialLeague = searchParams.get("league") || "League";
+  const ho = parseFloat(searchParams.get("ho") || "0") || undefined;
+  const dro = parseFloat(searchParams.get("do") || "0") || undefined;
+  const ao = parseFloat(searchParams.get("ao") || "0") || undefined;
+
+  const [homeTeam, setHomeTeam] = useState(initialHome);
+  const [awayTeam, setAwayTeam] = useState(initialAway);
+  const [league, setLeague] = useState(initialLeague);
+  const [homeOdds, setHomeOdds] = useState(ho);
+  const [drawOdds, setDrawOdds] = useState(dro);
+  const [awayOdds, setAwayOdds] = useState(ao);
+  const [homeScore, setHomeScore] = useState<number | null>(null);
+  const [awayScore, setAwayScore] = useState<number | null>(null);
+  const [matchStatus, setMatchStatus] = useState<string>("upcoming");
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real fixture data from API
+  useEffect(() => {
+    fetchFixtureDetails({ data: { fixtureId: matchId } })
+      .then((result) => {
+        if (result.match) {
+          const m = result.match;
+          setHomeTeam(m.homeTeam);
+          setAwayTeam(m.awayTeam);
+          setLeague(m.league);
+          if (m.odds) {
+            setHomeOdds(m.odds.home);
+            setDrawOdds(m.odds.draw);
+            setAwayOdds(m.odds.away);
+          }
+          setHomeScore(m.homeScore);
+          setAwayScore(m.awayScore);
+          setMatchStatus(m.status);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [matchId]);
 
   const markets = generateMarkets(matchId, homeOdds, drawOdds, awayOdds);
   const [expandedMarkets, setExpandedMarkets] = useState<Set<string>>(
@@ -59,6 +96,8 @@ function MatchDetailPage() {
     });
   };
 
+  const isLive = matchStatus === "live";
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
@@ -72,6 +111,13 @@ function MatchDetailPage() {
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">{league}</p>
             <p className="text-sm font-bold">{homeTeam} vs {awayTeam}</p>
+            {(isLive || matchStatus === "finished") && homeScore !== null && (
+              <p className="text-xs font-bold text-primary">
+                {homeScore} - {awayScore}
+                {isLive && <span className="ml-2 text-live animate-pulse">● LIVE</span>}
+                {matchStatus === "finished" && <span className="ml-2 text-muted-foreground">FT</span>}
+              </p>
+            )}
           </div>
           <span className="rounded-lg bg-primary/10 px-2 py-1 text-xs font-bold text-primary">
             {markets.length} markets
@@ -79,13 +125,19 @@ function MatchDetailPage() {
         </div>
       </div>
 
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      )}
+
       {/* Markets list */}
       <div className="space-y-2 px-4 pt-3">
         {markets.map((market) => {
           const isExpanded = expandedMarkets.has(market.id);
-          const isGrid3 = market.outcomes.length === 3;
-          const isGrid2 = market.outcomes.length === 2;
-          const isLargeGrid = market.outcomes.length > 5;
+          const colCount = market.outcomes.length === 2 ? "grid-cols-2"
+            : market.outcomes.length === 3 ? "grid-cols-3"
+            : "grid-cols-3";
 
           return (
             <div key={market.id} className="rounded-xl bg-card overflow-hidden">
@@ -101,9 +153,7 @@ function MatchDetailPage() {
                 )}
               </button>
               {isExpanded && (
-                <div className={`grid gap-1.5 px-3 pb-3 ${
-                  isLargeGrid ? "grid-cols-3" : isGrid3 ? "grid-cols-3" : isGrid2 ? "grid-cols-2" : "grid-cols-3"
-                }`}>
+                <div className={`grid gap-1.5 px-3 pb-3 ${colCount}`}>
                   {market.outcomes.map((outcome) => {
                     const selKey = getSelectionKey(matchId, outcome.key);
                     const isSelected = selectedKeys.has(selKey);
