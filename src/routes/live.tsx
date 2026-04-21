@@ -17,7 +17,7 @@ export const Route = createFileRoute("/live")({
   component: LivePage,
 });
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 15_000; // 15 seconds
 
 function LivePage() {
   const betSlip = useBetSlip();
@@ -105,13 +105,6 @@ function LivePage() {
         </div>
       </div>
 
-      {/* Auto-refresh notice */}
-      <div className="mx-4 mb-3 flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
-        <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-        <span className="text-[10px] text-primary">
-          Odds & scores refresh every 30 seconds • {matches.length} live {matches.length === 1 ? "match" : "matches"}
-        </span>
-      </div>
 
       {/* Odds header */}
       <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground">
@@ -135,7 +128,7 @@ function LivePage() {
               <Wifi className="h-8 w-8 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">No live matches right now</p>
-            <p className="mt-1 text-xs text-muted-foreground">Check back during match hours — we auto-poll every 30s</p>
+            <p className="mt-1 text-xs text-muted-foreground">Check back during match hours</p>
             <button
               onClick={() => loadMatches(true)}
               className="mt-4 rounded-xl bg-primary px-6 py-2 text-sm font-bold text-primary-foreground"
