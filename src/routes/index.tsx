@@ -116,10 +116,10 @@ function HomePage() {
           </div>
         )}
 
-        {error && !loading && matches.length === 0 && (
+        {!loading && matches.length === 0 && (
           <div className="rounded-xl bg-card p-6 text-center">
-            <p className="text-sm text-muted-foreground">{error}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Check back later for live fixtures</p>
+            <p className="text-sm text-muted-foreground">{error || "No games available right now"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">We&apos;re updating the fixture feed.</p>
           </div>
         )}
 
