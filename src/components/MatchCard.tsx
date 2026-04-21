@@ -25,6 +25,7 @@ interface MatchCardProps {
 
 export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardProps) {
   const isLive = match.status === "live";
+  const isFinished = match.status === "finished";
   const timeStr = isLive ? "LIVE" : match.kickOffDisplay || match.kickOff;
 
   const detailLink = `/match/${match.id}?home=${encodeURIComponent(match.homeTeam)}&away=${encodeURIComponent(match.awayTeam)}&league=${encodeURIComponent(match.league)}${match.odds ? `&ho=${match.odds.home}&do=${match.odds.draw}&ao=${match.odds.away}` : ""}`;
@@ -33,10 +34,17 @@ export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardP
     <div className="rounded-xl bg-card p-3">
       {/* League header */}
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span className="truncate">{match.league}</span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 truncate">
+          {match.leagueLogo && (
+            <img src={match.leagueLogo} alt="" className="h-3.5 w-3.5 rounded-sm object-contain" />
+          )}
+          <span className="truncate">{match.league}</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
           {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live" />}
-          <span className={isLive ? "font-semibold text-live" : ""}>{timeStr}</span>
+          <span className={isLive ? "font-semibold text-live" : isFinished ? "text-muted-foreground" : ""}>
+            {isFinished ? "FT" : timeStr}
+          </span>
           {match.markets && (
             <Link to={detailLink as any} className="text-primary hover:underline">
               +{match.markets}
@@ -48,15 +56,25 @@ export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardP
       {/* Teams — clickable to detail */}
       <Link to={detailLink as any} className="mb-3 block space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{match.homeTeam}</span>
-          {(isLive || match.status === "finished") && (
-            <span className="text-sm font-bold">{match.homeScore}</span>
+          <div className="flex items-center gap-2">
+            {match.homeLogo && (
+              <img src={match.homeLogo} alt="" className="h-4 w-4 rounded-sm object-contain" />
+            )}
+            <span className="text-sm font-medium">{match.homeTeam}</span>
+          </div>
+          {(isLive || isFinished) && (
+            <span className={`text-sm font-bold ${isLive ? "text-live" : ""}`}>{match.homeScore}</span>
           )}
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{match.awayTeam}</span>
-          {(isLive || match.status === "finished") && (
-            <span className="text-sm font-bold">{match.awayScore}</span>
+          <div className="flex items-center gap-2">
+            {match.awayLogo && (
+              <img src={match.awayLogo} alt="" className="h-4 w-4 rounded-sm object-contain" />
+            )}
+            <span className="text-sm font-medium">{match.awayTeam}</span>
+          </div>
+          {(isLive || isFinished) && (
+            <span className={`text-sm font-bold ${isLive ? "text-live" : ""}`}>{match.awayScore}</span>
           )}
         </div>
       </Link>
