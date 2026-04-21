@@ -4,7 +4,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { MatchCard, type MatchData } from "@/components/MatchCard";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
-import { Trophy, Zap, Star, Monitor, Gamepad2, TrendingUp, Loader2, ChevronRight } from "lucide-react";
+import { Loader2, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchFixtures } from "@/lib/sportmonks.functions";
 
@@ -29,14 +29,7 @@ const sportsTabs = [
   { id: "esports", label: "🎮 Esports" },
 ];
 
-const quickLinks = [
-  { icon: Zap, label: "Aviator", color: "bg-destructive/80", to: "/virtual" },
-  { icon: TrendingUp, label: "Top Bets", color: "bg-surface-elevated", to: "/" },
-  { icon: Monitor, label: "Live", color: "bg-surface-elevated", to: "/live" },
-  { icon: Gamepad2, label: "Virtual", color: "bg-surface-elevated", to: "/virtual" },
-  { icon: Trophy, label: "Jackpot", color: "bg-surface-elevated", to: "/" },
-  { icon: Star, label: "Promos", color: "bg-surface-elevated", to: "/vip" },
-];
+
 
 const featuredLeagues = [
   "Premier League", "La Liga", "Serie A", "Bundesliga",
