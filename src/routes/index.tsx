@@ -96,21 +96,6 @@ function HomePage() {
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
 
-      {/* Promo banner - Sportsbook Cashback */}
-      <div className="mx-4 mt-3 rounded-xl gradient-emerald p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="mb-1 inline-block rounded bg-background/20 px-2 py-0.5 text-[10px] font-bold uppercase">
-              Sportsbook
-            </span>
-            <h2 className="text-lg font-bold text-primary-foreground">25% CASHBACK</h2>
-            <p className="text-xs text-primary-foreground/80">On all sportsbook losses</p>
-          </div>
-          <Link to="/betslip" className="rounded-lg bg-background px-4 py-2 text-sm font-bold text-foreground">
-            Bet Now →
-          </Link>
-        </div>
-      </div>
 
       {/* Quick links */}
       <div className="flex gap-3 overflow-x-auto px-4 py-4 no-scrollbar">
