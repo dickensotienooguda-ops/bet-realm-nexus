@@ -4,7 +4,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { MatchCard, type MatchData } from "@/components/MatchCard";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
-import { Trophy, Zap, Star, Monitor, Gamepad2, TrendingUp, Loader2, ChevronRight } from "lucide-react";
+import { Loader2, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchFixtures } from "@/lib/sportmonks.functions";
 
@@ -29,14 +29,7 @@ const sportsTabs = [
   { id: "esports", label: "🎮 Esports" },
 ];
 
-const quickLinks = [
-  { icon: Zap, label: "Aviator", color: "bg-destructive/80", to: "/virtual" },
-  { icon: TrendingUp, label: "Top Bets", color: "bg-surface-elevated", to: "/" },
-  { icon: Monitor, label: "Live", color: "bg-surface-elevated", to: "/live" },
-  { icon: Gamepad2, label: "Virtual", color: "bg-surface-elevated", to: "/virtual" },
-  { icon: Trophy, label: "Jackpot", color: "bg-surface-elevated", to: "/" },
-  { icon: Star, label: "Promos", color: "bg-surface-elevated", to: "/vip" },
-];
+
 
 const featuredLeagues = [
   "Premier League", "La Liga", "Serie A", "Bundesliga",
@@ -97,17 +90,8 @@ function HomePage() {
       <TopBar />
 
 
-      {/* Quick links */}
-      <div className="flex gap-3 overflow-x-auto px-4 py-4 no-scrollbar">
-        {quickLinks.map((link) => (
-          <Link key={link.label} to={link.to as any} className="flex flex-col items-center gap-1.5 shrink-0">
-            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${link.color}`}>
-              <link.icon className="h-6 w-6" />
-            </div>
-            <span className="text-[11px] text-muted-foreground">{link.label}</span>
-          </Link>
-        ))}
-      </div>
+
+
 
       {/* Sport filter tabs */}
       <CategoryTabs tabs={sportsTabs} activeTab={activeSport} onTabChange={setActiveSport} />
