@@ -23,6 +23,17 @@ interface SportMonksFixture {
     image_path: string;
     country: { name: string };
   };
+  odds: Array<{
+    id: number;
+    market_id: number;
+    label: string;
+    value: string;
+    name: string;
+    market: {
+      id: number;
+      name: string;
+    };
+  }>;
 }
 
 interface MatchResponse {
@@ -60,12 +71,60 @@ function formatKickOff(dateStr: string): string {
   }
 }
 
+function extractOdds(fixture: SportMonksFixture): { home: number; draw: number; away: number } | undefined {
+  const oddsData = fixture.odds;
+  if (!oddsData || !Array.isArray(oddsData) || oddsData.length === 0) {
+    return undefined;
+  }
+
+  // Look for Match Result / 1X2 / Full Time Result market
+  // SportMonks market_id 1 is typically "Match Winner" / "1X2"
+  const matchWinnerOdds = oddsData.filter(
+    (o) =>
+      o.market_id === 1 ||
+      o.market?.name?.toLowerCase().includes("match winner") ||
+      o.market?.name?.toLowerCase().includes("full time result") ||
+      o.market?.name === "1X2"
+  );
+
+  if (matchWinnerOdds.length >= 2) {
+    const homeOdd = matchWinnerOdds.find((o) => o.label === "1" || o.label === "Home" || o.name === "Home");
+    const drawOdd = matchWinnerOdds.find((o) => o.label === "X" || o.label === "Draw" || o.name === "Draw");
+    const awayOdd = matchWinnerOdds.find((o) => o.label === "2" || o.label === "Away" || o.name === "Away");
+
+    if (homeOdd && awayOdd) {
+      return {
+        home: parseFloat(homeOdd.value) || 1.5,
+        draw: drawOdd ? parseFloat(drawOdd.value) || 3.0 : 3.0,
+        away: parseFloat(awayOdd.value) || 2.5,
+      };
+    }
+  }
+
+  // Fallback: try any odds with labels 1, X, 2
+  const home = oddsData.find((o) => o.label === "1");
+  const draw = oddsData.find((o) => o.label === "X");
+  const away = oddsData.find((o) => o.label === "2");
+
+  if (home && away) {
+    return {
+      home: parseFloat(home.value) || 1.5,
+      draw: draw ? parseFloat(draw.value) || 3.0 : 3.0,
+      away: parseFloat(away.value) || 2.5,
+    };
+  }
+
+  return undefined;
+}
+
 function mapFixture(f: SportMonksFixture): MatchResponse {
   const home = f.participants.find((p) => p.meta?.location === "home") || f.participants[0];
   const away = f.participants.find((p) => p.meta?.location === "away") || f.participants[1];
   const homeScore = f.scores?.find((s) => s.participant_id === home.id && s.description === "CURRENT")?.score?.goals ?? 0;
   const awayScore = f.scores?.find((s) => s.participant_id === away.id && s.description === "CURRENT")?.score?.goals ?? 0;
   const status = mapFixtureStatus(f.state?.short_name || "NS");
+
+  const realOdds = extractOdds(f);
 
   return {
     id: f.id.toString(),
@@ -82,11 +141,7 @@ function mapFixture(f: SportMonksFixture): MatchResponse {
     homeScore,
     awayScore,
     markets: 14,
-    odds: {
-      home: +(1.5 + Math.random() * 3).toFixed(2),
-      draw: +(2.5 + Math.random() * 2).toFixed(2),
-      away: +(1.8 + Math.random() * 4).toFixed(2),
-    },
+    odds: realOdds,
   };
 }
 
@@ -101,9 +156,10 @@ export const fetchFixtures = createServerFn({ method: "POST" })
 
     try {
       const today = data.date || new Date().toISOString().split("T")[0];
+      const includes = "participants;scores;state;league.country;odds.market";
 
       if (data.live) {
-        const url = `https://api.sportmonks.com/v3/football/livescores/inplay?api_token=${apiKey}&include=participants;scores;state;league.country&per_page=100`;
+        const url = `https://api.sportmonks.com/v3/football/livescores/inplay?api_token=${apiKey}&include=${includes}&per_page=100`;
         const res = await fetch(url);
         if (!res.ok) return { matches: [], error: `API error: ${res.status}` };
         const json = await res.json();
@@ -119,7 +175,7 @@ export const fetchFixtures = createServerFn({ method: "POST" })
 
       const allFixtures: SportMonksFixture[] = [];
       for (const d of dates) {
-        const url = `https://api.sportmonks.com/v3/football/fixtures/date/${d}?api_token=${apiKey}&include=participants;scores;state;league.country&per_page=100`;
+        const url = `https://api.sportmonks.com/v3/football/fixtures/date/${d}?api_token=${apiKey}&include=${includes}&per_page=100`;
         const res = await fetch(url);
         if (res.ok) {
           const json = await res.json();
