@@ -105,7 +105,7 @@ function HomePage() {
 
       {/* Featured leagues row */}
       <div className="flex gap-2 overflow-x-auto px-4 py-3 no-scrollbar">
-        {featuredLeagues.map((league) => (
+        {(featuredLeaguesBySport[activeSport] || featuredLeaguesBySport.all).map((league: string) => (
           <span
             key={league}
             className="shrink-0 rounded-lg bg-surface-elevated px-3 py-1.5 text-[10px] font-medium text-muted-foreground"
