@@ -1,6 +1,70 @@
 import { createServerFn } from "@tanstack/react-start";
 
-interface SportMonksFixture {
+// ─── Shared types ───
+
+export interface MatchResponse {
+  id: string;
+  externalId: number;
+  homeTeam: string;
+  awayTeam: string;
+  homeLogo: string;
+  awayLogo: string;
+  league: string;
+  leagueLogo: string;
+  kickOff: string;
+  kickOffDisplay: string;
+  status: "upcoming" | "live" | "finished";
+  homeScore: number;
+  awayScore: number;
+  markets: number;
+  odds: { home: number; draw: number; away: number };
+  homePosition?: number;
+  awayPosition?: number;
+  sport: string;
+  venue?: string;
+  round?: string;
+}
+
+// ─── Utility helpers ───
+
+function formatKickOff(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Africa/Nairobi",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function generateOdds(
+  seed: number,
+  homeAdv: number,
+  awayAdv: number
+): { home: number; draw: number; away: number } {
+  const diff = awayAdv - homeAdv;
+  const homeStr = Math.max(0.2, Math.min(0.7, 0.45 + diff * 0.015));
+  const drawP = 0.25;
+  const awayP = Math.max(0.12, 1 - homeStr - drawP);
+  const v = ((seed % 100) - 50) * 0.002;
+  const hP = Math.max(0.12, homeStr + v);
+  const aP = Math.max(0.12, awayP - v);
+  const dP = Math.max(0.12, 1 - hP - aP);
+  const m = 0.92;
+  return {
+    home: +Math.max(1.05, m / hP).toFixed(2),
+    draw: +Math.max(1.05, m / dP).toFixed(2),
+    away: +Math.max(1.05, m / aP).toFixed(2),
+  };
+}
+
+// ─── SportMonks football ───
+
+interface SMFixture {
   id: number;
   sport_id: number;
   league_id: number;
@@ -29,82 +93,22 @@ interface SportMonksFixture {
   };
 }
 
-export interface MatchResponse {
-  id: string;
-  externalId: number;
-  homeTeam: string;
-  awayTeam: string;
-  homeLogo: string;
-  awayLogo: string;
-  league: string;
-  leagueLogo: string;
-  kickOff: string;
-  kickOffDisplay: string;
-  status: "upcoming" | "live" | "finished";
-  homeScore: number;
-  awayScore: number;
-  markets: number;
-  odds: { home: number; draw: number; away: number };
-  homePosition?: number;
-  awayPosition?: number;
-  sport: string; // "soccer" | "basketball" | "tennis" | "cricket" | "rugby" | "baseball"
-}
-
-function mapFixtureStatus(state: string): "upcoming" | "live" | "finished" {
-  const liveStates = ["LIVE", "HT", "ET", "PEN_LIVE", "BREAK", "1ST_HALF", "2ND_HALF"];
-  const finishedStates = ["FT", "AET", "FT_PEN", "POSTP", "CANCL", "ABAN", "AWARDED"];
-  if (liveStates.includes(state)) return "live";
-  if (finishedStates.includes(state)) return "finished";
+function smStatus(state: string): "upcoming" | "live" | "finished" {
+  if (["LIVE", "HT", "ET", "PEN_LIVE", "BREAK", "1ST_HALF", "2ND_HALF"].includes(state)) return "live";
+  if (["FT", "AET", "FT_PEN", "POSTP", "CANCL", "ABAN", "AWARDED"].includes(state)) return "finished";
   return "upcoming";
 }
 
-function formatKickOff(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Nairobi" });
-  } catch {
-    return dateStr;
-  }
-}
-
-function generateOdds(
-  fixtureId: number,
-  homePosition: number,
-  awayPosition: number
-): { home: number; draw: number; away: number } {
-  const positionDiff = awayPosition - homePosition;
-  const homeStrength = 0.45 + positionDiff * 0.015;
-  const clampedHome = Math.max(0.2, Math.min(0.7, homeStrength));
-  const drawProb = 0.25;
-  const awayProb = 1 - clampedHome - drawProb;
-  const seed = fixtureId % 100;
-  const variance = (seed - 50) * 0.002;
-  const homeProb = Math.max(0.12, clampedHome + variance);
-  const finalAwayProb = Math.max(0.12, awayProb - variance);
-  const finalDrawProb = Math.max(0.12, 1 - homeProb - finalAwayProb);
-  const margin = 0.92;
-  return {
-    home: +Math.max(1.05, margin / homeProb).toFixed(2),
-    draw: +Math.max(1.05, margin / finalDrawProb).toFixed(2),
-    away: +Math.max(1.05, margin / finalAwayProb).toFixed(2),
-  };
-}
-
-function mapFixture(f: SportMonksFixture, sport = "soccer"): MatchResponse | null {
+function mapSMFixture(f: SMFixture): MatchResponse | null {
   if (!f.participants || f.participants.length < 2) return null;
   const home = f.participants.find((p) => p.meta?.location === "home") || f.participants[0];
   const away = f.participants.find((p) => p.meta?.location === "away") || f.participants[1];
   if (!home || !away) return null;
-
-  const homeScore =
-    f.scores?.find((s) => s.participant_id === home.id && s.description === "CURRENT")?.score?.goals ?? 0;
-  const awayScore =
-    f.scores?.find((s) => s.participant_id === away.id && s.description === "CURRENT")?.score?.goals ?? 0;
-  const status = mapFixtureStatus(f.state?.short_name || "NS");
-  const homePos = home.meta?.position || 10;
-  const awayPos = away.meta?.position || 10;
-  const odds = generateOdds(f.id, homePos, awayPos);
-
+  const hScore = f.scores?.find((s) => s.participant_id === home.id && s.description === "CURRENT")?.score?.goals ?? 0;
+  const aScore = f.scores?.find((s) => s.participant_id === away.id && s.description === "CURRENT")?.score?.goals ?? 0;
+  const status = smStatus(f.state?.short_name || "NS");
+  const hPos = home.meta?.position || 10;
+  const aPos = away.meta?.position || 10;
   return {
     id: f.id.toString(),
     externalId: f.id,
@@ -112,288 +116,365 @@ function mapFixture(f: SportMonksFixture, sport = "soccer"): MatchResponse | nul
     awayTeam: away.name,
     homeLogo: home.image_path || "",
     awayLogo: away.image_path || "",
-    league: f.league
-      ? `${f.league.country?.name || ""} • ${f.league.name || ""}`
-      : sport === "cricket" ? "Cricket" : "Football",
+    league: f.league ? `${f.league.country?.name || ""} • ${f.league.name || ""}` : "Football",
     leagueLogo: f.league?.image_path || "",
     kickOff: f.starting_at,
     kickOffDisplay: status === "live" ? "LIVE" : formatKickOff(f.starting_at),
     status,
-    homeScore,
-    awayScore,
+    homeScore: hScore,
+    awayScore: aScore,
     markets: 14,
-    odds,
-    homePosition: homePos,
-    awayPosition: awayPos,
-    sport,
+    odds: generateOdds(f.id, hPos, aPos),
+    homePosition: hPos,
+    awayPosition: aPos,
+    sport: "soccer",
   };
 }
 
-async function fetchPage(url: string): Promise<SportMonksFixture[]> {
+async function fetchSMPage(url: string): Promise<SMFixture[]> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) { console.error("SM fetch failed:", res.status); return []; }
+    const json = await res.json();
+    return (json.data || []).filter((f: any) => f.participants?.length >= 2);
+  } catch (err) { console.error("SM error:", err); return []; }
+}
+
+async function fetchFootball(apiKey: string, live: boolean, date?: string): Promise<MatchResponse[]> {
+  const includes = "participants;scores;state;league.country";
+  const perPage = 50;
+  const results: MatchResponse[] = [];
+  try {
+    if (live) {
+      const fixtures = await fetchSMPage(
+        `https://api.sportmonks.com/v3/football/livescores/inplay?api_token=${apiKey}&include=${includes}&per_page=${perPage}`
+      );
+      results.push(...(fixtures.map(mapSMFixture).filter(Boolean) as MatchResponse[]));
+    } else {
+      const today = date || new Date().toISOString().split("T")[0];
+      for (let i = 0; i < 3; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const ds = d.toISOString().split("T")[0];
+        const url = `https://api.sportmonks.com/v3/football/fixtures/date/${ds}?api_token=${apiKey}&include=${includes}&per_page=${perPage}`;
+        const p1 = await fetchSMPage(url);
+        results.push(...(p1.map(mapSMFixture).filter(Boolean) as MatchResponse[]));
+        if (p1.length >= perPage) {
+          const p2 = await fetchSMPage(`${url}&page=2`);
+          results.push(...(p2.map(mapSMFixture).filter(Boolean) as MatchResponse[]));
+        }
+      }
+    }
+  } catch (err) { console.error("Football fetch err:", err); }
+  return results;
+}
+
+// ─── ESPN API for basketball, baseball, tennis, cricket, rugby ───
+
+const ESPN_SPORTS: Record<string, { path: string; league: string }> = {
+  basketball: { path: "basketball/nba", league: "NBA" },
+  baseball: { path: "baseball/mlb", league: "MLB" },
+  tennis_atp: { path: "tennis/atp", league: "ATP Tour" },
+  tennis_wta: { path: "tennis/wta", league: "WTA Tour" },
+  cricket: { path: "cricket", league: "Cricket" },
+  rugby: { path: "rugby/rugby-union", league: "Rugby Union" },
+};
+
+interface ESPNEvent {
+  id: string;
+  name: string;
+  date: string;
+  shortName?: string;
+  competitions: Array<{
+    id: string;
+    venue?: { fullName?: string };
+    status: {
+      type: { name: string; description: string };
+      displayClock?: string;
+    };
+    competitors: Array<{
+      homeAway: string;
+      score?: string;
+      team: {
+        id: string;
+        displayName: string;
+        abbreviation: string;
+        logo: string;
+      };
+      athlete?: { displayName: string; flag?: { href: string } };
+    }>;
+    notes?: Array<{ headline?: string }>;
+  }>;
+  season?: { slug?: string };
+}
+
+function espnStatus(name: string): "upcoming" | "live" | "finished" {
+  if (name === "STATUS_IN_PROGRESS" || name === "STATUS_HALFTIME" || name === "STATUS_END_PERIOD") return "live";
+  if (name === "STATUS_FINAL" || name === "STATUS_POSTPONED" || name === "STATUS_CANCELED") return "finished";
+  return "upcoming";
+}
+
+function mapESPNEvent(e: ESPNEvent, sport: string): MatchResponse | null {
+  const comp = e.competitions?.[0];
+  if (!comp || !comp.competitors || comp.competitors.length < 2) return null;
+
+  const homeComp = comp.competitors.find((c) => c.homeAway === "home") || comp.competitors[0];
+  const awayComp = comp.competitors.find((c) => c.homeAway === "away") || comp.competitors[1];
+
+  // For tennis, use athlete name if available
+  const homeName = homeComp.athlete?.displayName || homeComp.team?.displayName || "TBD";
+  const awayName = awayComp.athlete?.displayName || awayComp.team?.displayName || "TBD";
+  const homeLogo = homeComp.team?.logo || "";
+  const awayLogo = awayComp.team?.logo || "";
+
+  const status = espnStatus(comp.status?.type?.name || "");
+  const hScore = parseInt(homeComp.score || "0", 10) || 0;
+  const aScore = parseInt(awayComp.score || "0", 10) || 0;
+  const numId = parseInt(e.id, 10) || parseInt(comp.id, 10) || 0;
+
+  const leagueInfo = ESPN_SPORTS[sport]?.league || sport;
+  const round = comp.notes?.[0]?.headline || "";
+
+  return {
+    id: `espn-${sport}-${e.id}`,
+    externalId: numId,
+    homeTeam: homeName,
+    awayTeam: awayName,
+    homeLogo,
+    awayLogo,
+    league: round ? `${leagueInfo} • ${round}` : leagueInfo,
+    leagueLogo: "",
+    kickOff: e.date,
+    kickOffDisplay: status === "live"
+      ? (comp.status?.displayClock || "LIVE")
+      : formatKickOff(e.date),
+    status,
+    homeScore: hScore,
+    awayScore: aScore,
+    markets: sport === "tennis" ? 6 : 10,
+    odds: generateOdds(numId, 10, 10),
+    sport: sport.startsWith("tennis") ? "tennis" : sport,
+    venue: comp.venue?.fullName,
+    round,
+  };
+}
+
+async function fetchESPNSport(sportKey: string): Promise<MatchResponse[]> {
+  const info = ESPN_SPORTS[sportKey];
+  if (!info) return [];
+
+  // Get today + next 5 days of data
+  const today = new Date();
+  const end = new Date(today);
+  end.setDate(end.getDate() + 5);
+  const dateRange = `${today.toISOString().split("T")[0].replace(/-/g, "")}-${end.toISOString().split("T")[0].replace(/-/g, "")}`;
+
+  const url = `https://site.api.espn.com/apis/site/v2/sports/${info.path}/scoreboard?dates=${dateRange}`;
+
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.error("SportMonks fetch failed:", res.status);
+      console.error(`ESPN ${sportKey} failed:`, res.status);
       return [];
     }
     const json = await res.json();
-    return (json.data || []).filter((f: any) => f.participants?.length >= 2);
+    const events: ESPNEvent[] = json.events || [];
+
+    // For tennis tournaments, the event itself might be the tournament
+    // and competitions are individual matches
+    if (sportKey.startsWith("tennis")) {
+      const matches: MatchResponse[] = [];
+      for (const evt of events) {
+        if (evt.competitions && evt.competitions.length > 0) {
+          // Each competition is a match
+          for (const comp of evt.competitions) {
+            const fakeEvt: ESPNEvent = {
+              ...evt,
+              id: comp.id,
+              competitions: [comp],
+            };
+            const mapped = mapESPNEvent(fakeEvt, sportKey);
+            if (mapped && mapped.homeTeam !== "TBD" && mapped.awayTeam !== "TBD") {
+              matches.push(mapped);
+            }
+          }
+        }
+      }
+      return matches;
+    }
+
+    return events.map((e) => mapESPNEvent(e, sportKey)).filter(Boolean) as MatchResponse[];
   } catch (err) {
-    console.error("SportMonks fetch error:", err);
+    console.error(`ESPN ${sportKey} error:`, err);
     return [];
   }
 }
 
-// ----------- TheSportsDB free API for basketball, tennis, etc. -----------
+async function fetchAllESPN(sportFilter?: string): Promise<MatchResponse[]> {
+  const sportsToFetch: string[] = [];
 
-interface SportsDBEvent {
-  idEvent: string;
-  strEvent: string;
-  strHomeTeam: string;
-  strAwayTeam: string;
-  strLeague: string;
-  strThumb: string | null;
-  strHomeTeamBadge: string | null;
-  strAwayTeamBadge: string | null;
-  strLeagueBadge: string | null;
-  dateEvent: string;
-  strTime: string;
-  strStatus: string | null;
-  intHomeScore: string | null;
-  intAwayScore: string | null;
-  strSport: string;
-}
-
-function mapSportsDBSport(sport: string): string {
-  const map: Record<string, string> = {
-    Soccer: "soccer",
-    Basketball: "basketball",
-    Tennis: "tennis",
-    Cricket: "cricket",
-    Rugby: "rugby",
-    Baseball: "baseball",
-    "Ice Hockey": "hockey",
-    Volleyball: "volleyball",
-  };
-  return map[sport] || sport.toLowerCase();
-}
-
-function mapSportsDBEvent(e: SportsDBEvent): MatchResponse {
-  const status: "upcoming" | "live" | "finished" =
-    e.strStatus === "Match Finished" || e.intHomeScore !== null ? "finished" :
-    e.strStatus && e.strStatus !== "Not Started" ? "live" : "upcoming";
-
-  const id = `sdb-${e.idEvent}`;
-  const numId = parseInt(e.idEvent, 10) || Math.floor(Math.random() * 100000);
-  const homeScore = parseInt(e.intHomeScore || "0", 10) || 0;
-  const awayScore = parseInt(e.intAwayScore || "0", 10) || 0;
-
-  const odds = generateOdds(numId, 10, 10);
-  const kickOff = `${e.dateEvent}T${e.strTime || "00:00:00"}`;
-
-  return {
-    id,
-    externalId: numId,
-    homeTeam: e.strHomeTeam,
-    awayTeam: e.strAwayTeam,
-    homeLogo: e.strHomeTeamBadge || "",
-    awayLogo: e.strAwayTeamBadge || "",
-    league: e.strLeague,
-    leagueLogo: e.strLeagueBadge || "",
-    kickOff,
-    kickOffDisplay: status === "live" ? "LIVE" : formatKickOff(kickOff),
-    status,
-    homeScore,
-    awayScore,
-    markets: 8,
-    odds,
-    sport: mapSportsDBSport(e.strSport),
-  };
-}
-
-// TheSportsDB league IDs for popular leagues
-const SPORTSDB_LEAGUES: { id: string; sport: string }[] = [
-  // Basketball
-  { id: "4387", sport: "basketball" }, // NBA
-  { id: "4431", sport: "basketball" }, // EuroLeague
-  // Tennis
-  { id: "4464", sport: "tennis" }, // ATP
-  { id: "4467", sport: "tennis" }, // WTA
-  // Cricket
-  { id: "4472", sport: "cricket" }, // IPL
-  { id: "4654", sport: "cricket" }, // T20 World Cup
-  // Rugby
-  { id: "4405", sport: "rugby" }, // Six Nations
-  { id: "4419", sport: "rugby" }, // Super Rugby
-  // Baseball
-  { id: "4424", sport: "baseball" }, // MLB
-];
-
-async function fetchSportsDBEvents(): Promise<MatchResponse[]> {
-  const results: MatchResponse[] = [];
-
-  // Fetch next 15 events for each league
-  const fetches = SPORTSDB_LEAGUES.map(async (league) => {
-    try {
-      const url = `https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${league.id}`;
-      const res = await fetch(url);
-      if (!res.ok) return [];
-      const json = await res.json();
-      if (!json.events) return [];
-      return (json.events as SportsDBEvent[]).map(mapSportsDBEvent);
-    } catch {
-      return [];
-    }
-  });
-
-  const allResults = await Promise.all(fetches);
-  for (const r of allResults) {
-    results.push(...r);
+  if (!sportFilter || sportFilter === "all") {
+    sportsToFetch.push("basketball", "baseball", "tennis_atp", "tennis_wta", "cricket", "rugby");
+  } else if (sportFilter === "tennis") {
+    sportsToFetch.push("tennis_atp", "tennis_wta");
+  } else if (ESPN_SPORTS[sportFilter]) {
+    sportsToFetch.push(sportFilter);
   }
 
-  // Also fetch live/recent events
-  try {
-    const liveUrls = [
-      "https://www.thesportsdb.com/api/v2/json/3/livescore/Basketball",
-      "https://www.thesportsdb.com/api/v2/json/3/livescore/Tennis",
-      "https://www.thesportsdb.com/api/v2/json/3/livescore/Cricket",
-    ];
-    // These are v2 endpoints that may or may not work on the free tier
-    // Fail gracefully
-  } catch {
-    // ignore
-  }
-
-  return results;
+  const results = await Promise.all(sportsToFetch.map(fetchESPNSport));
+  return results.flat();
 }
 
-// ----------- Main fetch functions -----------
+// ─── Main exported functions ───
 
 export const fetchFixtures = createServerFn({ method: "POST" })
   .inputValidator((input: { date?: string; live?: boolean; days?: number; sport?: string }) => input)
   .handler(async ({ data }) => {
     const apiKey = process.env.SPORTMONKS_API_KEY;
     const sport = data.sport || "all";
-
     const allMatches: MatchResponse[] = [];
     const errors: string[] = [];
 
-    // --- Fetch football from SportMonks ---
+    // Football from SportMonks
     if (sport === "all" || sport === "soccer") {
       if (!apiKey) {
         errors.push("Sports feed not configured for football");
       } else {
-        const includes = "participants;scores;state;league.country";
-        const perPage = 50;
-        const live = Boolean(data.live);
-
         try {
-          if (live) {
-            const url = `https://api.sportmonks.com/v3/football/livescores/inplay?api_token=${apiKey}&include=${includes}&per_page=${perPage}`;
-            const fixtures = await fetchPage(url);
-            const matches = fixtures.map((f) => mapFixture(f, "soccer")).filter(Boolean) as MatchResponse[];
-            allMatches.push(...matches);
-          } else {
-            const today = data.date || new Date().toISOString().split("T")[0];
-            const dates: string[] = [];
-            for (let i = 0; i < 3; i++) {
-              const d = new Date(today);
-              d.setDate(d.getDate() + i);
-              dates.push(d.toISOString().split("T")[0]);
-            }
-
-            for (const d of dates) {
-              const url1 = `https://api.sportmonks.com/v3/football/fixtures/date/${d}?api_token=${apiKey}&include=${includes}&per_page=${perPage}`;
-              const page1 = await fetchPage(url1);
-              allMatches.push(...(page1.map((f) => mapFixture(f, "soccer")).filter(Boolean) as MatchResponse[]));
-              if (page1.length >= perPage) {
-                const page2 = await fetchPage(`${url1}&page=2`);
-                allMatches.push(...(page2.map((f) => mapFixture(f, "soccer")).filter(Boolean) as MatchResponse[]));
-              }
-            }
-          }
+          const fm = await fetchFootball(apiKey, Boolean(data.live), data.date);
+          allMatches.push(...fm);
         } catch (err) {
-          console.error("SportMonks football error:", err);
-          errors.push("Failed to fetch football fixtures");
+          console.error("Football error:", err);
+          errors.push("Failed to fetch football");
         }
       }
     }
 
-    // --- Fetch basketball, tennis, cricket, rugby, baseball from TheSportsDB ---
-    if (sport === "all" || ["basketball", "tennis", "cricket", "rugby", "baseball"].includes(sport)) {
+    // Other sports from ESPN
+    if (sport === "all" || sport !== "soccer") {
       try {
-        const sdbMatches = await fetchSportsDBEvents();
-        if (sport !== "all") {
-          allMatches.push(...sdbMatches.filter((m) => m.sport === sport));
-        } else {
-          allMatches.push(...sdbMatches);
-        }
+        const espn = await fetchAllESPN(sport === "all" ? "all" : sport);
+        allMatches.push(...espn);
       } catch (err) {
-        console.error("TheSportsDB error:", err);
-        errors.push("Failed to fetch multi-sport fixtures");
+        console.error("ESPN error:", err);
+        errors.push("Failed to fetch multi-sport data");
       }
     }
 
-    // Sort: live first, upcoming, finished
+    // Sort: live → upcoming → finished
     allMatches.sort((a, b) => {
-      if (a.status === "live" && b.status !== "live") return -1;
-      if (b.status === "live" && a.status !== "live") return 1;
-      if (a.status === "upcoming" && b.status === "finished") return -1;
-      if (b.status === "upcoming" && a.status === "finished") return 1;
+      const order = { live: 0, upcoming: 1, finished: 2 };
+      if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
       return new Date(a.kickOff).getTime() - new Date(b.kickOff).getTime();
     });
 
-    return {
-      matches: allMatches,
-      error: errors.length > 0 ? errors.join("; ") : null,
-      fallback: false,
-    };
+    return { matches: allMatches, error: errors.length > 0 ? errors.join("; ") : null, fallback: false };
   });
 
 export const fetchFixtureDetails = createServerFn({ method: "POST" })
   .inputValidator((input: { fixtureId: string }) => input)
   .handler(async ({ data }) => {
-    // Handle TheSportsDB fixtures
-    if (data.fixtureId.startsWith("sdb-")) {
-      const eventId = data.fixtureId.replace("sdb-", "");
-      try {
-        const url = `https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${eventId}`;
-        const res = await fetch(url);
-        if (!res.ok) return { match: null, error: `API error: ${res.status}` };
-        const json = await res.json();
-        const e = json.events?.[0];
-        if (!e) return { match: null, error: "Event not found" };
+    const fid = data.fixtureId;
 
-        const mapped = mapSportsDBEvent(e);
-        return { match: { ...mapped, statistics: [] }, error: null };
+    // ── ESPN fixture detail ──
+    if (fid.startsWith("espn-")) {
+      const parts = fid.replace("espn-", "").split("-");
+      const sportKey = parts.slice(0, -1).join("-") || parts[0];
+      const eventId = parts[parts.length - 1];
+
+      // Determine the ESPN path
+      let espnPath = "";
+      const resolvedKey = sportKey.startsWith("tennis") ? sportKey : sportKey;
+      const info = ESPN_SPORTS[resolvedKey];
+      if (info) {
+        espnPath = info.path;
+      } else {
+        // Try to guess from known sport names
+        const fallbacks: Record<string, string> = {
+          basketball: "basketball/nba",
+          baseball: "baseball/mlb",
+          tennis: "tennis/atp",
+          cricket: "cricket",
+          rugby: "rugby/rugby-union",
+        };
+        espnPath = fallbacks[sportKey] || `${sportKey}/scoreboard`;
+      }
+
+      try {
+        // Try event-level endpoint
+        const url = `https://site.api.espn.com/apis/site/v2/sports/${espnPath}/summary?event=${eventId}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          const header = json.header;
+          const comps = header?.competitions?.[0] || json.competitions?.[0];
+          if (comps && comps.competitors?.length >= 2) {
+            const hc = comps.competitors.find((c: any) => c.homeAway === "home") || comps.competitors[0];
+            const ac = comps.competitors.find((c: any) => c.homeAway === "away") || comps.competitors[1];
+            const status = espnStatus(comps.status?.type?.name || "");
+            const numId = parseInt(eventId, 10) || 0;
+            const match: MatchResponse & { statistics: any[] } = {
+              id: fid,
+              externalId: numId,
+              homeTeam: hc.team?.displayName || hc.athlete?.displayName || "Home",
+              awayTeam: ac.team?.displayName || ac.athlete?.displayName || "Away",
+              homeLogo: hc.team?.logos?.[0]?.href || hc.team?.logo || "",
+              awayLogo: ac.team?.logos?.[0]?.href || ac.team?.logo || "",
+              league: header?.league?.name || json.league?.name || sportKey,
+              leagueLogo: header?.league?.logos?.[0]?.href || "",
+              kickOff: header?.competitions?.[0]?.date || new Date().toISOString(),
+              kickOffDisplay: status === "live" ? "LIVE" : formatKickOff(header?.competitions?.[0]?.date || ""),
+              status,
+              homeScore: parseInt(hc.score || "0", 10) || 0,
+              awayScore: parseInt(ac.score || "0", 10) || 0,
+              markets: 10,
+              odds: generateOdds(numId, 10, 10),
+              sport: sportKey.startsWith("tennis") ? "tennis" : sportKey,
+              venue: comps.venue?.fullName,
+              statistics: json.boxscore?.teams || [],
+            };
+            return { match, error: null };
+          }
+        }
+
+        // Fallback: fetch from scoreboard
+        const sbUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnPath}/scoreboard`;
+        const sbRes = await fetch(sbUrl);
+        if (sbRes.ok) {
+          const sbJson = await sbRes.json();
+          const events: ESPNEvent[] = sbJson.events || [];
+          const evt = events.find((e) => e.id === eventId);
+          if (evt) {
+            const mapped = mapESPNEvent(evt, resolvedKey);
+            if (mapped) return { match: { ...mapped, statistics: [] }, error: null };
+          }
+        }
+
+        return { match: null, error: "Event not found" };
       } catch (err) {
-        console.error("TheSportsDB detail error:", err);
+        console.error("ESPN detail error:", err);
         return { match: null, error: "Failed to fetch event details" };
       }
     }
 
-    // Handle SportMonks football fixtures
+    // ── SportMonks football detail ──
     const apiKey = process.env.SPORTMONKS_API_KEY;
-    if (!apiKey) {
-      return { match: null, error: "API key not configured" };
-    }
+    if (!apiKey) return { match: null, error: "API key not configured" };
 
     try {
-      const url = `https://api.sportmonks.com/v3/football/fixtures/${data.fixtureId}?api_token=${apiKey}&include=participants;scores;state;league.country;statistics`;
+      const url = `https://api.sportmonks.com/v3/football/fixtures/${fid}?api_token=${apiKey}&include=participants;scores;state;league.country;statistics`;
       const res = await fetch(url);
       if (!res.ok) return { match: null, error: `API error: ${res.status}` };
       const json = await res.json();
       const f = json.data;
-      if (!f || !f.participants || f.participants.length < 2) {
-        return { match: null, error: "Fixture not found" };
-      }
-      const mapped = mapFixture(f, "soccer");
+      if (!f || !f.participants || f.participants.length < 2) return { match: null, error: "Fixture not found" };
+      const mapped = mapSMFixture(f);
       return {
         match: mapped ? { ...mapped, statistics: f.statistics || [] } : null,
         error: mapped ? null : "Failed to map fixture",
       };
     } catch (err) {
-      console.error("SportMonks fixture detail error:", err);
+      console.error("SM detail error:", err);
       return { match: null, error: "Failed to fetch fixture details" };
     }
   });
