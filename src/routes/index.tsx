@@ -49,17 +49,18 @@ function HomePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchFixtures({ data: {} })
+    setError(null);
+    fetchFixtures({ data: { sport: activeSport === "all" ? undefined : activeSport } })
       .then((result) => {
         if (result.error) setError(result.error);
-        if (result.matches.length > 0) setMatches(result.matches as MatchData[]);
+        setMatches((result.matches || []) as MatchData[]);
         setLoading(false);
       })
       .catch(() => {
         setError("Failed to load matches");
         setLoading(false);
       });
-  }, []);
+  }, [activeSport]);
 
   const handleOddsClick = (matchId: string, selection: "home" | "draw" | "away", odds: number) => {
     const match = matches.find((m) => m.id === matchId);

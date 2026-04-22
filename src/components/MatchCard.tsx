@@ -15,6 +15,7 @@ export interface MatchData {
   awayScore?: number;
   markets?: number;
   odds?: { home: number; draw: number; away: number };
+  sport?: string;
 }
 
 interface MatchCardProps {
