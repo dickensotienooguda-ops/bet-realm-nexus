@@ -28,14 +28,15 @@ export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardP
   const isLive = match.status === "live";
   const isFinished = match.status === "finished";
   const timeStr = isLive ? "LIVE" : match.kickOffDisplay || match.kickOff;
-
-  const detailLink = `/match/${match.id}?home=${encodeURIComponent(match.homeTeam)}&away=${encodeURIComponent(match.awayTeam)}&league=${encodeURIComponent(match.league)}${match.odds ? `&ho=${match.odds.home}&do=${match.odds.draw}&ao=${match.odds.away}` : ""}`;
+  const sportIcon: Record<string, string> = { soccer: "⚽", basketball: "🏀", tennis: "🎾", cricket: "🏏", rugby: "🏉", baseball: "⚾" };
+  const icon = match.sport ? sportIcon[match.sport] || "🏅" : "";
 
   return (
     <div className="rounded-xl bg-card p-3">
       {/* League header */}
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5 truncate">
+          {icon && <span className="text-xs">{icon}</span>}
           {match.leagueLogo && (
             <img src={match.leagueLogo} alt="" className="h-3.5 w-3.5 rounded-sm object-contain" />
           )}
@@ -47,7 +48,7 @@ export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardP
             {isFinished ? "FT" : timeStr}
           </span>
           {match.markets && (
-            <Link to={detailLink as any} className="text-primary hover:underline">
+            <Link to="/match/$matchId" params={{ matchId: match.id }} className="text-primary hover:underline">
               +{match.markets}
             </Link>
           )}
@@ -55,7 +56,7 @@ export function MatchCard({ match, onOddsClick, selectedSelections }: MatchCardP
       </div>
 
       {/* Teams — clickable to detail */}
-      <Link to={detailLink as any} className="mb-3 block space-y-1">
+      <Link to="/match/$matchId" params={{ matchId: match.id }} className="mb-3 block space-y-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {match.homeLogo && (

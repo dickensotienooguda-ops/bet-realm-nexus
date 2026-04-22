@@ -31,10 +31,16 @@ const sportsTabs = [
 
 
 
-const featuredLeagues = [
-  "Premier League", "La Liga", "Serie A", "Bundesliga",
-  "Champions League", "Africa Cup", "World Cup Qualifiers",
-];
+const featuredLeaguesBySport: Record<string, string[]> = {
+  all: ["Premier League", "NBA", "ATP Tour", "MLB", "La Liga", "Serie A"],
+  soccer: ["Premier League", "La Liga", "Serie A", "Bundesliga", "Champions League", "Ligue 1"],
+  basketball: ["NBA", "EuroLeague", "NBA Playoffs"],
+  tennis: ["ATP Tour", "WTA Tour", "Grand Slams"],
+  cricket: ["IPL", "T20 World Cup", "Test Series"],
+  rugby: ["Six Nations", "Super Rugby", "Rugby World Cup"],
+  baseball: ["MLB", "World Series"],
+  esports: ["League of Legends", "CS2", "Dota 2"],
+};
 
 function HomePage() {
   const betSlip = useBetSlip();
@@ -99,7 +105,7 @@ function HomePage() {
 
       {/* Featured leagues row */}
       <div className="flex gap-2 overflow-x-auto px-4 py-3 no-scrollbar">
-        {featuredLeagues.map((league) => (
+        {(featuredLeaguesBySport[activeSport] || featuredLeaguesBySport.all).map((league: string) => (
           <span
             key={league}
             className="shrink-0 rounded-lg bg-surface-elevated px-3 py-1.5 text-[10px] font-medium text-muted-foreground"
