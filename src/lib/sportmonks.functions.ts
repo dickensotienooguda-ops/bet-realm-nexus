@@ -327,154 +327,149 @@ async function fetchAllESPN(sportFilter?: string): Promise<MatchResponse[]> {
 
 // ─── Main exported functions ───
 
+export async function getFixturesData(data: { date?: string; live?: boolean; days?: number; sport?: string }) {
+  const apiKey = process.env.SPORTMONKS_API_KEY;
+  const sport = data.sport || "all";
+  const allMatches: MatchResponse[] = [];
+  const errors: string[] = [];
+
+  if (sport === "all" || sport === "soccer") {
+    if (!apiKey) {
+      errors.push("Sports feed not configured for football");
+    } else {
+      try {
+        const fm = await fetchFootball(apiKey, Boolean(data.live), data.date);
+        allMatches.push(...fm);
+      } catch (err) {
+        console.error("Football error:", err);
+        errors.push("Failed to fetch football");
+      }
+    }
+  }
+
+  if (sport === "all" || sport !== "soccer") {
+    try {
+      const espn = await fetchAllESPN(sport === "all" ? "all" : sport);
+      allMatches.push(...espn);
+    } catch (err) {
+      console.error("ESPN error:", err);
+      errors.push("Failed to fetch multi-sport data");
+    }
+  }
+
+  allMatches.sort((a, b) => {
+    const order = { live: 0, upcoming: 1, finished: 2 };
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    return new Date(a.kickOff).getTime() - new Date(b.kickOff).getTime();
+  });
+
+  return { matches: allMatches, error: errors.length > 0 ? errors.join("; ") : null, fallback: false };
+}
+
 export const fetchFixtures = createServerFn({ method: "POST" })
   .inputValidator((input: { date?: string; live?: boolean; days?: number; sport?: string }) => input)
-  .handler(async ({ data }) => {
-    const apiKey = process.env.SPORTMONKS_API_KEY;
-    const sport = data.sport || "all";
-    const allMatches: MatchResponse[] = [];
-    const errors: string[] = [];
+  .handler(async ({ data }) => getFixturesData(data));
 
-    // Football from SportMonks
-    if (sport === "all" || sport === "soccer") {
-      if (!apiKey) {
-        errors.push("Sports feed not configured for football");
-      } else {
-        try {
-          const fm = await fetchFootball(apiKey, Boolean(data.live), data.date);
-          allMatches.push(...fm);
-        } catch (err) {
-          console.error("Football error:", err);
-          errors.push("Failed to fetch football");
+export async function getFixtureDetailsData(data: { fixtureId: string }) {
+  const fid = data.fixtureId;
+
+  if (fid.startsWith("espn-")) {
+    const parts = fid.replace("espn-", "").split("-");
+    const sportKey = parts.slice(0, -1).join("-") || parts[0];
+    const eventId = parts[parts.length - 1];
+
+    let espnPath = "";
+    const resolvedKey = sportKey.startsWith("tennis") ? sportKey : sportKey;
+    const info = ESPN_SPORTS[resolvedKey];
+    if (info) {
+      espnPath = info.path;
+    } else {
+      const fallbacks: Record<string, string> = {
+        basketball: "basketball/nba",
+        baseball: "baseball/mlb",
+        tennis: "tennis/atp",
+        cricket: "cricket",
+        rugby: "rugby/rugby-union",
+      };
+      espnPath = fallbacks[sportKey] || `${sportKey}/scoreboard`;
+    }
+
+    try {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/${espnPath}/summary?event=${eventId}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        const header = json.header;
+        const comps = header?.competitions?.[0] || json.competitions?.[0];
+        if (comps && comps.competitors?.length >= 2) {
+          const hc = comps.competitors.find((c: any) => c.homeAway === "home") || comps.competitors[0];
+          const ac = comps.competitors.find((c: any) => c.homeAway === "away") || comps.competitors[1];
+          const status = espnStatus(comps.status?.type?.name || "");
+          const numId = parseInt(eventId, 10) || 0;
+          const match: MatchResponse & { statistics: any[] } = {
+            id: fid,
+            externalId: numId,
+            homeTeam: hc.team?.displayName || hc.athlete?.displayName || "Home",
+            awayTeam: ac.team?.displayName || ac.athlete?.displayName || "Away",
+            homeLogo: hc.team?.logos?.[0]?.href || hc.team?.logo || "",
+            awayLogo: ac.team?.logos?.[0]?.href || ac.team?.logo || "",
+            league: header?.league?.name || json.league?.name || sportKey,
+            leagueLogo: header?.league?.logos?.[0]?.href || "",
+            kickOff: header?.competitions?.[0]?.date || new Date().toISOString(),
+            kickOffDisplay: status === "live" ? "LIVE" : formatKickOff(header?.competitions?.[0]?.date || ""),
+            status,
+            homeScore: parseInt(hc.score || "0", 10) || 0,
+            awayScore: parseInt(ac.score || "0", 10) || 0,
+            markets: 10,
+            odds: generateOdds(numId, 10, 10),
+            sport: sportKey.startsWith("tennis") ? "tennis" : sportKey,
+            venue: comps.venue?.fullName,
+            statistics: json.boxscore?.teams || [],
+          };
+          return { match, error: null };
         }
       }
-    }
 
-    // Other sports from ESPN
-    if (sport === "all" || sport !== "soccer") {
-      try {
-        const espn = await fetchAllESPN(sport === "all" ? "all" : sport);
-        allMatches.push(...espn);
-      } catch (err) {
-        console.error("ESPN error:", err);
-        errors.push("Failed to fetch multi-sport data");
+      const sbUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnPath}/scoreboard`;
+      const sbRes = await fetch(sbUrl);
+      if (sbRes.ok) {
+        const sbJson = await sbRes.json();
+        const events: ESPNEvent[] = sbJson.events || [];
+        const evt = events.find((e) => e.id === eventId);
+        if (evt) {
+          const mapped = mapESPNEvent(evt, resolvedKey);
+          if (mapped) return { match: { ...mapped, statistics: [] }, error: null };
+        }
       }
+
+      return { match: null, error: "Event not found" };
+    } catch (err) {
+      console.error("ESPN detail error:", err);
+      return { match: null, error: "Failed to fetch event details" };
     }
+  }
 
-    // Sort: live → upcoming → finished
-    allMatches.sort((a, b) => {
-      const order = { live: 0, upcoming: 1, finished: 2 };
-      if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
-      return new Date(a.kickOff).getTime() - new Date(b.kickOff).getTime();
-    });
+  const apiKey = process.env.SPORTMONKS_API_KEY;
+  if (!apiKey) return { match: null, error: "API key not configured" };
 
-    return { matches: allMatches, error: errors.length > 0 ? errors.join("; ") : null, fallback: false };
-  });
+  try {
+    const url = `https://api.sportmonks.com/v3/football/fixtures/${fid}?api_token=${apiKey}&include=participants;scores;state;league.country;statistics`;
+    const res = await fetch(url);
+    if (!res.ok) return { match: null, error: `API error: ${res.status}` };
+    const json = await res.json();
+    const f = json.data;
+    if (!f || !f.participants || f.participants.length < 2) return { match: null, error: "Fixture not found" };
+    const mapped = mapSMFixture(f);
+    return {
+      match: mapped ? { ...mapped, statistics: f.statistics || [] } : null,
+      error: mapped ? null : "Failed to map fixture",
+    };
+  } catch (err) {
+    console.error("SM detail error:", err);
+    return { match: null, error: "Failed to fetch fixture details" };
+  }
+}
 
 export const fetchFixtureDetails = createServerFn({ method: "POST" })
   .inputValidator((input: { fixtureId: string }) => input)
-  .handler(async ({ data }) => {
-    const fid = data.fixtureId;
-
-    // ── ESPN fixture detail ──
-    if (fid.startsWith("espn-")) {
-      const parts = fid.replace("espn-", "").split("-");
-      const sportKey = parts.slice(0, -1).join("-") || parts[0];
-      const eventId = parts[parts.length - 1];
-
-      // Determine the ESPN path
-      let espnPath = "";
-      const resolvedKey = sportKey.startsWith("tennis") ? sportKey : sportKey;
-      const info = ESPN_SPORTS[resolvedKey];
-      if (info) {
-        espnPath = info.path;
-      } else {
-        // Try to guess from known sport names
-        const fallbacks: Record<string, string> = {
-          basketball: "basketball/nba",
-          baseball: "baseball/mlb",
-          tennis: "tennis/atp",
-          cricket: "cricket",
-          rugby: "rugby/rugby-union",
-        };
-        espnPath = fallbacks[sportKey] || `${sportKey}/scoreboard`;
-      }
-
-      try {
-        // Try event-level endpoint
-        const url = `https://site.api.espn.com/apis/site/v2/sports/${espnPath}/summary?event=${eventId}`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const json = await res.json();
-          const header = json.header;
-          const comps = header?.competitions?.[0] || json.competitions?.[0];
-          if (comps && comps.competitors?.length >= 2) {
-            const hc = comps.competitors.find((c: any) => c.homeAway === "home") || comps.competitors[0];
-            const ac = comps.competitors.find((c: any) => c.homeAway === "away") || comps.competitors[1];
-            const status = espnStatus(comps.status?.type?.name || "");
-            const numId = parseInt(eventId, 10) || 0;
-            const match: MatchResponse & { statistics: any[] } = {
-              id: fid,
-              externalId: numId,
-              homeTeam: hc.team?.displayName || hc.athlete?.displayName || "Home",
-              awayTeam: ac.team?.displayName || ac.athlete?.displayName || "Away",
-              homeLogo: hc.team?.logos?.[0]?.href || hc.team?.logo || "",
-              awayLogo: ac.team?.logos?.[0]?.href || ac.team?.logo || "",
-              league: header?.league?.name || json.league?.name || sportKey,
-              leagueLogo: header?.league?.logos?.[0]?.href || "",
-              kickOff: header?.competitions?.[0]?.date || new Date().toISOString(),
-              kickOffDisplay: status === "live" ? "LIVE" : formatKickOff(header?.competitions?.[0]?.date || ""),
-              status,
-              homeScore: parseInt(hc.score || "0", 10) || 0,
-              awayScore: parseInt(ac.score || "0", 10) || 0,
-              markets: 10,
-              odds: generateOdds(numId, 10, 10),
-              sport: sportKey.startsWith("tennis") ? "tennis" : sportKey,
-              venue: comps.venue?.fullName,
-              statistics: json.boxscore?.teams || [],
-            };
-            return { match, error: null };
-          }
-        }
-
-        // Fallback: fetch from scoreboard
-        const sbUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnPath}/scoreboard`;
-        const sbRes = await fetch(sbUrl);
-        if (sbRes.ok) {
-          const sbJson = await sbRes.json();
-          const events: ESPNEvent[] = sbJson.events || [];
-          const evt = events.find((e) => e.id === eventId);
-          if (evt) {
-            const mapped = mapESPNEvent(evt, resolvedKey);
-            if (mapped) return { match: { ...mapped, statistics: [] }, error: null };
-          }
-        }
-
-        return { match: null, error: "Event not found" };
-      } catch (err) {
-        console.error("ESPN detail error:", err);
-        return { match: null, error: "Failed to fetch event details" };
-      }
-    }
-
-    // ── SportMonks football detail ──
-    const apiKey = process.env.SPORTMONKS_API_KEY;
-    if (!apiKey) return { match: null, error: "API key not configured" };
-
-    try {
-      const url = `https://api.sportmonks.com/v3/football/fixtures/${fid}?api_token=${apiKey}&include=participants;scores;state;league.country;statistics`;
-      const res = await fetch(url);
-      if (!res.ok) return { match: null, error: `API error: ${res.status}` };
-      const json = await res.json();
-      const f = json.data;
-      if (!f || !f.participants || f.participants.length < 2) return { match: null, error: "Fixture not found" };
-      const mapped = mapSMFixture(f);
-      return {
-        match: mapped ? { ...mapped, statistics: f.statistics || [] } : null,
-        error: mapped ? null : "Failed to map fixture",
-      };
-    } catch (err) {
-      console.error("SM detail error:", err);
-      return { match: null, error: "Failed to fetch fixture details" };
-    }
-  });
+  .handler(async ({ data }) => getFixtureDetailsData(data));

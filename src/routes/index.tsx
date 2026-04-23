@@ -6,7 +6,6 @@ import { MatchCard, type MatchData } from "@/components/MatchCard";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
 import { Loader2, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
-import { fetchFixtures } from "@/lib/sportmonks.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,7 +55,11 @@ function HomePage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetchFixtures({ data: { sport: activeSport === "all" ? undefined : activeSport } })
+    const params = new URLSearchParams();
+    if (activeSport !== "all") params.set("sport", activeSport);
+
+    fetch(`/api/fixtures?${params.toString()}`)
+      .then((response) => response.json())
       .then((result) => {
         if (result.error) setError(result.error);
         setMatches((result.matches || []) as MatchData[]);

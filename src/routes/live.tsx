@@ -5,7 +5,6 @@ import { MatchCard, type MatchData } from "@/components/MatchCard";
 import { addSelection, useBetSlip, getSelectionKey } from "@/lib/betslip-store";
 import { Loader2, RefreshCw, Wifi } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { fetchFixtures } from "@/lib/sportmonks.functions";
 
 export const Route = createFileRoute("/live")({
   head: () => ({
@@ -35,7 +34,8 @@ function LivePage() {
     if (showLoader) setLoading(true);
     setIsPolling(true);
     try {
-      const result = await fetchFixtures({ data: { live: true } });
+      const response = await fetch("/api/fixtures?live=true");
+      const result = await response.json();
       const liveMatches = (result.matches || []) as MatchData[];
       setMatches(liveMatches);
       setLastUpdated(new Date());

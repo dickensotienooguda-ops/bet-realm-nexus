@@ -40,7 +40,8 @@ function MatchDetailPage() {
   const [marketCount, setMarketCount] = useState(14);
 
   useEffect(() => {
-    fetchFixtureDetails({ data: { fixtureId: matchId } })
+    fetch(`/api/fixture-details?fixtureId=${encodeURIComponent(matchId)}`)
+      .then((response) => response.json())
       .then((result) => {
         if (result.match) {
           const m = result.match;
