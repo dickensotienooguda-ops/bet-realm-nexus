@@ -29,11 +29,20 @@ function WalletPage() {
   const { session, user } = useAuth();
   const [activeTab, setActiveTab] = useState("deposit");
   const [amount, setAmount] = useState("");
+  const [phone, setPhone] = useState("");
   const [balance, setBalance] = useState("0.00");
   const [currency, setCurrency] = useState("KES");
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loadingTx, setLoadingTx] = useState(false);
   const [depositMsg, setDepositMsg] = useState("");
+  const [depositing, setDepositing] = useState(false);
+  const [pendingCheckoutId, setPendingCheckoutId] = useState<string | null>(null);
+
+  // Pre-fill phone from profile metadata when available
+  useEffect(() => {
+    const p = user?.user_metadata?.phone || user?.phone;
+    if (p && !phone) setPhone(String(p));
+  }, [user]);
 
   useEffect(() => {
     if (!session) return;
