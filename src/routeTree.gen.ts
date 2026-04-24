@@ -26,6 +26,7 @@ import { Route as ApiFixtureDetailsRouteImport } from './routes/api/fixture-deta
 import { Route as ApiDepositRouteImport } from './routes/api/deposit'
 import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
+import { Route as ApiPublicLipwaCallbackRouteImport } from './routes/api/public/lipwa-callback'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -112,6 +113,11 @@ const ApiAdminRoute = ApiAdminRouteImport.update({
   path: '/api/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLipwaCallbackRoute = ApiPublicLipwaCallbackRouteImport.update({
+  id: '/api/public/lipwa-callback',
+  path: '/api/public/lipwa-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
   '/match/$matchId': typeof MatchMatchIdRoute
+  '/api/public/lipwa-callback': typeof ApiPublicLipwaCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
   '/match/$matchId': typeof MatchMatchIdRoute
+  '/api/public/lipwa-callback': typeof ApiPublicLipwaCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
   '/match/$matchId': typeof MatchMatchIdRoute
+  '/api/public/lipwa-callback': typeof ApiPublicLipwaCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/api/fixtures'
     | '/hooks/settle'
     | '/match/$matchId'
+    | '/api/public/lipwa-callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/api/fixtures'
     | '/hooks/settle'
     | '/match/$matchId'
+    | '/api/public/lipwa-callback'
   id:
     | '__root__'
     | '/'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/api/fixtures'
     | '/hooks/settle'
     | '/match/$matchId'
+    | '/api/public/lipwa-callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -249,6 +261,7 @@ export interface RootRouteChildren {
   ApiFixturesRoute: typeof ApiFixturesRoute
   HooksSettleRoute: typeof HooksSettleRoute
   MatchMatchIdRoute: typeof MatchMatchIdRoute
+  ApiPublicLipwaCallbackRoute: typeof ApiPublicLipwaCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -372,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/lipwa-callback': {
+      id: '/api/public/lipwa-callback'
+      path: '/api/public/lipwa-callback'
+      fullPath: '/api/public/lipwa-callback'
+      preLoaderRoute: typeof ApiPublicLipwaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -393,6 +413,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFixturesRoute: ApiFixturesRoute,
   HooksSettleRoute: HooksSettleRoute,
   MatchMatchIdRoute: MatchMatchIdRoute,
+  ApiPublicLipwaCallbackRoute: ApiPublicLipwaCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
