@@ -23,9 +23,11 @@ import { Route as MatchMatchIdRouteImport } from './routes/match.$matchId'
 import { Route as HooksSettleRouteImport } from './routes/hooks/settle'
 import { Route as ApiFixturesRouteImport } from './routes/api/fixtures'
 import { Route as ApiFixtureDetailsRouteImport } from './routes/api/fixture-details'
+import { Route as ApiDepositStatusRouteImport } from './routes/api/deposit-status'
 import { Route as ApiDepositRouteImport } from './routes/api/deposit'
 import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
+import { Route as ApiPublicLipwaCallbackRouteImport } from './routes/api/public/lipwa-callback'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -97,6 +99,11 @@ const ApiFixtureDetailsRoute = ApiFixtureDetailsRouteImport.update({
   path: '/api/fixture-details',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDepositStatusRoute = ApiDepositStatusRouteImport.update({
+  id: '/api/deposit-status',
+  path: '/api/deposit-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDepositRoute = ApiDepositRouteImport.update({
   id: '/api/deposit',
   path: '/api/deposit',
@@ -110,6 +117,11 @@ const ApiCreateWalletRoute = ApiCreateWalletRouteImport.update({
 const ApiAdminRoute = ApiAdminRouteImport.update({
   id: '/api/admin',
   path: '/api/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicLipwaCallbackRoute = ApiPublicLipwaCallbackRouteImport.update({
+  id: '/api/public/lipwa-callback',
+  path: '/api/public/lipwa-callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -127,10 +139,12 @@ export interface FileRoutesByFullPath {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/api/deposit-status': typeof ApiDepositStatusRoute
   '/api/fixture-details': typeof ApiFixtureDetailsRoute
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
   '/match/$matchId': typeof MatchMatchIdRoute
+  '/api/public/lipwa-callback': typeof ApiPublicLipwaCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -146,10 +160,12 @@ export interface FileRoutesByTo {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/api/deposit-status': typeof ApiDepositStatusRoute
   '/api/fixture-details': typeof ApiFixtureDetailsRoute
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
   '/match/$matchId': typeof MatchMatchIdRoute
+  '/api/public/lipwa-callback': typeof ApiPublicLipwaCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -166,10 +182,12 @@ export interface FileRoutesById {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/api/deposit-status': typeof ApiDepositStatusRoute
   '/api/fixture-details': typeof ApiFixtureDetailsRoute
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
   '/match/$matchId': typeof MatchMatchIdRoute
+  '/api/public/lipwa-callback': typeof ApiPublicLipwaCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -187,10 +205,12 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/api/deposit-status'
     | '/api/fixture-details'
     | '/api/fixtures'
     | '/hooks/settle'
     | '/match/$matchId'
+    | '/api/public/lipwa-callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -206,10 +226,12 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/api/deposit-status'
     | '/api/fixture-details'
     | '/api/fixtures'
     | '/hooks/settle'
     | '/match/$matchId'
+    | '/api/public/lipwa-callback'
   id:
     | '__root__'
     | '/'
@@ -225,10 +247,12 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/api/deposit-status'
     | '/api/fixture-details'
     | '/api/fixtures'
     | '/hooks/settle'
     | '/match/$matchId'
+    | '/api/public/lipwa-callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -245,10 +269,12 @@ export interface RootRouteChildren {
   ApiAdminRoute: typeof ApiAdminRoute
   ApiCreateWalletRoute: typeof ApiCreateWalletRoute
   ApiDepositRoute: typeof ApiDepositRoute
+  ApiDepositStatusRoute: typeof ApiDepositStatusRoute
   ApiFixtureDetailsRoute: typeof ApiFixtureDetailsRoute
   ApiFixturesRoute: typeof ApiFixturesRoute
   HooksSettleRoute: typeof HooksSettleRoute
   MatchMatchIdRoute: typeof MatchMatchIdRoute
+  ApiPublicLipwaCallbackRoute: typeof ApiPublicLipwaCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -351,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFixtureDetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/deposit-status': {
+      id: '/api/deposit-status'
+      path: '/api/deposit-status'
+      fullPath: '/api/deposit-status'
+      preLoaderRoute: typeof ApiDepositStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/deposit': {
       id: '/api/deposit'
       path: '/api/deposit'
@@ -372,6 +405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/lipwa-callback': {
+      id: '/api/public/lipwa-callback'
+      path: '/api/public/lipwa-callback'
+      fullPath: '/api/public/lipwa-callback'
+      preLoaderRoute: typeof ApiPublicLipwaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -389,10 +429,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminRoute: ApiAdminRoute,
   ApiCreateWalletRoute: ApiCreateWalletRoute,
   ApiDepositRoute: ApiDepositRoute,
+  ApiDepositStatusRoute: ApiDepositStatusRoute,
   ApiFixtureDetailsRoute: ApiFixtureDetailsRoute,
   ApiFixturesRoute: ApiFixturesRoute,
   HooksSettleRoute: HooksSettleRoute,
   MatchMatchIdRoute: MatchMatchIdRoute,
+  ApiPublicLipwaCallbackRoute: ApiPublicLipwaCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

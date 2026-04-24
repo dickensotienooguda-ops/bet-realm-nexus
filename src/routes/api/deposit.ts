@@ -1,49 +1,115 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+function normalizePhone(input: string): string | null {
+  const digits = input.replace(/\D/g, "");
+  if (digits.startsWith("254") && digits.length === 12) return digits;
+  if (digits.startsWith("0") && digits.length === 10) return "254" + digits.slice(1);
+  if ((digits.startsWith("7") || digits.startsWith("1")) && digits.length === 9) return "254" + digits;
+  return null;
+}
 
 export const Route = createFileRoute("/api/deposit")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { createClient } = await import("@supabase/supabase-js");
-        const url = process.env.SUPABASE_URL!;
-        const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        if (!url || !key) {
-          return Response.json({ error: "Missing env" }, { status: 500 });
+        const apiKey = process.env.LIPWA_API_KEY;
+        const channelId = process.env.LIPWA_CHANNEL_ID;
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+        if (!apiKey || !channelId) {
+          return Response.json({ error: "Payment provider not configured" }, { status: 500 });
+        }
+        if (!supabaseUrl || !anonKey) {
+          return Response.json({ error: "Server misconfigured" }, { status: 500 });
         }
 
-        // Get auth token
-        const authHeader = request.headers.get("authorization") || request.headers.get("cookie");
-        const admin = createClient(url, key, { auth: { persistSession: false } });
+        // Identify user from bearer token
+        const authHeader = request.headers.get("authorization");
+        if (!authHeader?.startsWith("Bearer ")) {
+          return Response.json({ error: "Not authenticated" }, { status: 401 });
+        }
+        const token = authHeader.slice(7);
+        const userClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+        if (userErr || !userData?.user) {
+          return Response.json({ error: "Invalid session" }, { status: 401 });
+        }
+        const userId = userData.user.id;
 
-        const body = await request.json();
-        const { amount } = body as { amount: number };
-        if (!amount || amount < 5 || amount > 250000) {
-          return Response.json({ error: "Amount must be between 5 and 250,000" }, { status: 400 });
+        const body = await request.json().catch(() => null);
+        const amount = Number(body?.amount);
+        const phoneRaw = String(body?.phone_number || "");
+        if (!amount || amount < 10 || amount > 250000) {
+          return Response.json({ error: "Amount must be between 10 and 250,000" }, { status: 400 });
+        }
+        const phone = normalizePhone(phoneRaw);
+        if (!phone) {
+          return Response.json({ error: "Invalid phone number" }, { status: 400 });
         }
 
-        // For mock deposit: get any user's wallet and credit it
-        // In production, this would verify payment via M-PESA callback
-        // For now, we find all wallets and credit the first one (demo)
-        const { data: wallets } = await admin.from("wallets").select("*").limit(1);
-        if (!wallets || wallets.length === 0) {
-          return Response.json({ error: "No wallet found" }, { status: 404 });
+        // Find user wallet
+        const { data: wallet, error: wErr } = await supabaseAdmin
+          .from("wallets")
+          .select("id")
+          .eq("user_id", userId)
+          .single();
+        if (wErr || !wallet) {
+          return Response.json({ error: "Wallet not found" }, { status: 404 });
         }
 
-        const wallet = wallets[0];
-        const newBalance = +(Number(wallet.balance) + amount).toFixed(2);
+        // Build callback URL from request origin
+        const origin = new URL(request.url).origin;
+        const callbackUrl = `${origin}/api/public/lipwa-callback`;
 
-        await admin.from("wallets").update({ balance: newBalance }).eq("id", wallet.id);
+        // Initiate STK push
+        const lipwaRes = await fetch("https://pay.lipwa.app/api/payments", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phone_number: phone,
+            amount: Math.floor(amount),
+            channel_id: channelId,
+            callback_url: callbackUrl,
+            api_ref: { user_id: userId, wallet_id: wallet.id },
+          }),
+        });
 
-        // Record transaction
-        await admin.from("transactions").insert({
+        const lipwaData = await lipwaRes.json().catch(() => ({}));
+        if (!lipwaRes.ok || lipwaData.ResponseCode !== "0") {
+          return Response.json(
+            { error: lipwaData?.errorMessage || lipwaData?.ResponseDescription || "Failed to initiate payment" },
+            { status: 400 }
+          );
+        }
+
+        const checkoutId: string = lipwaData.CheckoutRequestID;
+
+        // Create pending transaction
+        await supabaseAdmin.from("transactions").insert({
           wallet_id: wallet.id,
           type: "deposit",
           amount: amount,
-          status: "successful",
-          description: "M-PESA Deposit (demo)",
+          status: "pending",
+          description: `M-PESA STK Push to ${phone}`,
+          reference: checkoutId,
+          checkout_id: checkoutId,
+          metadata: { phone, merchant_request_id: lipwaData.MerchantRequestID },
         });
 
-        return Response.json({ success: true, newBalance });
+        return Response.json({
+          success: true,
+          checkout_id: checkoutId,
+          message: lipwaData.CustomerMessage || "Check your phone to complete payment",
+        });
       },
     },
   },
