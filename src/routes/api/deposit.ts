@@ -45,8 +45,8 @@ export const Route = createFileRoute("/api/deposit")({
         const body = await request.json().catch(() => null);
         const amount = Number(body?.amount);
         const phoneRaw = String(body?.phone_number || "");
-        if (!amount || amount < 10 || amount > 250000) {
-          return Response.json({ error: "Amount must be between 10 and 250,000" }, { status: 400 });
+        if (!amount || amount < 1000 || amount > 250000) {
+          return Response.json({ error: "Amount must be between 1,000 and 250,000" }, { status: 400 });
         }
         const phone = normalizePhone(phoneRaw);
         if (!phone) {
