@@ -23,6 +23,7 @@ import { Route as MatchMatchIdRouteImport } from './routes/match.$matchId'
 import { Route as HooksSettleRouteImport } from './routes/hooks/settle'
 import { Route as ApiFixturesRouteImport } from './routes/api/fixtures'
 import { Route as ApiFixtureDetailsRouteImport } from './routes/api/fixture-details'
+import { Route as ApiDepositStatusRouteImport } from './routes/api/deposit-status'
 import { Route as ApiDepositRouteImport } from './routes/api/deposit'
 import { Route as ApiCreateWalletRouteImport } from './routes/api/create-wallet'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
@@ -98,6 +99,11 @@ const ApiFixtureDetailsRoute = ApiFixtureDetailsRouteImport.update({
   path: '/api/fixture-details',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDepositStatusRoute = ApiDepositStatusRouteImport.update({
+  id: '/api/deposit-status',
+  path: '/api/deposit-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDepositRoute = ApiDepositRouteImport.update({
   id: '/api/deposit',
   path: '/api/deposit',
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/api/deposit-status': typeof ApiDepositStatusRoute
   '/api/fixture-details': typeof ApiFixtureDetailsRoute
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/api/deposit-status': typeof ApiDepositStatusRoute
   '/api/fixture-details': typeof ApiFixtureDetailsRoute
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/api/admin': typeof ApiAdminRoute
   '/api/create-wallet': typeof ApiCreateWalletRoute
   '/api/deposit': typeof ApiDepositRoute
+  '/api/deposit-status': typeof ApiDepositStatusRoute
   '/api/fixture-details': typeof ApiFixtureDetailsRoute
   '/api/fixtures': typeof ApiFixturesRoute
   '/hooks/settle': typeof HooksSettleRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/api/deposit-status'
     | '/api/fixture-details'
     | '/api/fixtures'
     | '/hooks/settle'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/api/deposit-status'
     | '/api/fixture-details'
     | '/api/fixtures'
     | '/hooks/settle'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/api/admin'
     | '/api/create-wallet'
     | '/api/deposit'
+    | '/api/deposit-status'
     | '/api/fixture-details'
     | '/api/fixtures'
     | '/hooks/settle'
@@ -257,6 +269,7 @@ export interface RootRouteChildren {
   ApiAdminRoute: typeof ApiAdminRoute
   ApiCreateWalletRoute: typeof ApiCreateWalletRoute
   ApiDepositRoute: typeof ApiDepositRoute
+  ApiDepositStatusRoute: typeof ApiDepositStatusRoute
   ApiFixtureDetailsRoute: typeof ApiFixtureDetailsRoute
   ApiFixturesRoute: typeof ApiFixturesRoute
   HooksSettleRoute: typeof HooksSettleRoute
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFixtureDetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/deposit-status': {
+      id: '/api/deposit-status'
+      path: '/api/deposit-status'
+      fullPath: '/api/deposit-status'
+      preLoaderRoute: typeof ApiDepositStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/deposit': {
       id: '/api/deposit'
       path: '/api/deposit'
@@ -409,6 +429,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminRoute: ApiAdminRoute,
   ApiCreateWalletRoute: ApiCreateWalletRoute,
   ApiDepositRoute: ApiDepositRoute,
+  ApiDepositStatusRoute: ApiDepositStatusRoute,
   ApiFixtureDetailsRoute: ApiFixtureDetailsRoute,
   ApiFixturesRoute: ApiFixturesRoute,
   HooksSettleRoute: HooksSettleRoute,
