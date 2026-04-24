@@ -65,23 +65,81 @@ function WalletPage() {
       });
   }, [session, activeTab]);
 
+  const refreshBalance = async () => {
+    if (!session) return;
+    const res = await getWallet({ data: undefined as never, headers: { Authorization: `Bearer ${session.access_token}` } });
+    if (res.wallet) setBalance(Number(res.wallet.balance).toFixed(2));
+  };
+
   const handleDeposit = async () => {
-    if (!session || !amount) return;
-    // Mock deposit — credit wallet via API
-    const res = await fetch("/api/deposit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: parseFloat(amount) }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setDepositMsg(`Deposited ${currency} ${amount} successfully!`);
-      setBalance(Number(data.newBalance).toFixed(2));
-      setAmount("");
-    } else {
-      setDepositMsg(data.error || "Deposit failed");
+    if (!session || !amount || depositing) return;
+    if (!phone || phone.replace(/\D/g, "").length < 9) {
+      setDepositMsg("Enter a valid M-PESA phone number");
+      return;
+    }
+    setDepositing(true);
+    setDepositMsg("Sending STK push to your phone…");
+    try {
+      const res = await fetch("/api/deposit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ amount: parseFloat(amount), phone_number: phone }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setDepositMsg(data.error || "Deposit failed");
+        setDepositing(false);
+        return;
+      }
+      setPendingCheckoutId(data.checkout_id);
+      setDepositMsg(data.message || "Check your phone and enter your M-PESA PIN");
+    } catch (err: any) {
+      setDepositMsg(err?.message || "Network error");
+      setDepositing(false);
     }
   };
+
+  // Poll for status while a deposit is pending
+  useEffect(() => {
+    if (!pendingCheckoutId || !session) return;
+    let attempts = 0;
+    const maxAttempts = 40; // ~2 minutes at 3s
+    const interval = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch(`/api/deposit-status?checkout_id=${pendingCheckoutId}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const data = await res.json();
+        if (data.status === "successful") {
+          clearInterval(interval);
+          setDepositMsg(`Deposited ${currency} ${amount} successfully!`);
+          if (data.balance != null) setBalance(Number(data.balance).toFixed(2));
+          else refreshBalance();
+          setAmount("");
+          setPendingCheckoutId(null);
+          setDepositing(false);
+        } else if (data.status === "failed") {
+          clearInterval(interval);
+          setDepositMsg("Payment failed or was cancelled");
+          setPendingCheckoutId(null);
+          setDepositing(false);
+        }
+      } catch {
+        /* ignore */
+      }
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        setDepositMsg("Timed out waiting for payment. Check your transactions.");
+        setPendingCheckoutId(null);
+        setDepositing(false);
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [pendingCheckoutId, session]);
 
   if (!session) {
     return (
