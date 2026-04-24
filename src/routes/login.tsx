@@ -72,15 +72,22 @@ function LoginPage() {
       phone: fullPhone,
       countryCode: country.code,
     });
-    setLoading(false);
     if (err) {
+      setLoading(false);
       setError(err.message);
       return;
     }
-    setInfo("Account created! Check your email to verify, then sign in.");
-    setMode("signin");
-    setPassword("");
-    setConfirmPassword("");
+    // Auto sign-in after signup
+    const { error: signInErr } = await signIn(email.trim(), password);
+    setLoading(false);
+    if (signInErr) {
+      setInfo("Account created! Please sign in.");
+      setMode("signin");
+      setPassword("");
+      setConfirmPassword("");
+      return;
+    }
+    navigate({ to: "/" });
   };
 
   return (
