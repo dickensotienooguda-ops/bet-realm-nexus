@@ -56,20 +56,6 @@ export type Database = {
             referencedRelation: "bets"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "bet_selections_market_id_fkey"
-            columns: ["market_id"]
-            isOneToOne: false
-            referencedRelation: "markets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bet_selections_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
         ]
       }
       bets: {
