@@ -23,7 +23,8 @@ const walletTabs = [
   { id: "history", label: "History" },
 ];
 
-const quickAmounts = [100, 200, 500, 1000, 2000, 5000, 10000];
+const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
+const MIN_DEPOSIT = 1000;
 
 function WalletPage() {
   const { session, user } = useAuth();
@@ -73,6 +74,11 @@ function WalletPage() {
 
   const handleDeposit = async () => {
     if (!session || !amount || depositing) return;
+    const amt = parseFloat(amount);
+    if (!amt || amt < MIN_DEPOSIT) {
+      setDepositMsg(`Minimum deposit is ${currency} ${MIN_DEPOSIT}`);
+      return;
+    }
     if (!phone || phone.replace(/\D/g, "").length < 9) {
       setDepositMsg("Enter a valid M-PESA phone number");
       return;
@@ -86,7 +92,7 @@ function WalletPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ amount: parseFloat(amount), phone_number: phone }),
+        body: JSON.stringify({ amount: amt, phone_number: phone }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -179,18 +185,24 @@ function WalletPage() {
       </div>
 
       {depositMsg && (
-        <div className="mx-4 mt-2 rounded-xl bg-won/10 p-3 text-sm font-medium text-won">{depositMsg}</div>
+        <div className={`mx-4 mt-2 flex items-center gap-2 rounded-xl p-3 text-sm font-medium ${
+          depositing ? "bg-primary/10 text-primary" : "bg-won/10 text-won"
+        }`}>
+          {depositing && <Loader2 className="h-4 w-4 animate-spin" />}
+          {depositMsg}
+        </div>
       )}
 
       {activeTab === "deposit" && (
         <div className="px-4 pt-2">
           <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Select Amount</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {quickAmounts.map((a) => (
               <button
                 key={a}
                 onClick={() => setAmount(a.toString())}
-                className={`rounded-lg py-3 text-sm font-medium transition-colors ${
+                disabled={depositing}
+                className={`rounded-lg py-3 text-sm font-medium transition-colors disabled:opacity-50 ${
                   amount === a.toString() ? "bg-primary text-primary-foreground" : "bg-surface-elevated text-foreground"
                 }`}
               >
@@ -207,11 +219,12 @@ function WalletPage() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
-              className="ml-2 flex-1 bg-transparent text-lg font-bold outline-none placeholder:text-muted-foreground"
+              disabled={depositing}
+              className="ml-2 flex-1 bg-transparent text-lg font-bold outline-none placeholder:text-muted-foreground disabled:opacity-50"
             />
           </div>
           <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-            <span>Min: {currency} 10</span>
+            <span>Min: {currency} {MIN_DEPOSIT.toLocaleString()}</span>
             <span>Max: {currency} 250,000</span>
           </div>
 
@@ -239,23 +252,6 @@ function WalletPage() {
               <>⚡ Deposit {amount ? `${currency} ${amount}` : ""}</>
             )}
           </button>
-
-          <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
-            <p className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">M</span>
-              Alternative: Pay via Paybill
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[10px] uppercase text-muted-foreground">Paybill Number</p>
-                <p className="text-lg font-bold">562424</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase text-muted-foreground">Account Number</p>
-                <p className="text-lg font-bold text-primary">{user?.user_metadata?.phone || "0797585941"}</p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
