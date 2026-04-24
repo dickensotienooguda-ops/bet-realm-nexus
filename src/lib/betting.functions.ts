@@ -7,7 +7,7 @@ const placeBetSchema = z.object({
     matchId: z.string().min(1).max(255),
     marketId: z.string().min(1).max(255),
     outcomeKey: z.string().min(1).max(50),
-    outcomeLabel: z.string().min(1).max(100),
+    outcomeLabel: z.string().min(1).max(200),
     odds: z.number().min(1.01).max(10000),
   })).min(1).max(20),
   stake: z.number().min(1).max(1000000),
