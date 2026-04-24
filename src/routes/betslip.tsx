@@ -48,13 +48,11 @@ function BetslipPage() {
     setResult(null);
 
     try {
-      // We need market IDs — for now create placeholder markets in DB via admin
-      // For the MVP, we'll create markets on-the-fly if they don't exist
       const token = session.access_token;
 
       const selectionsData = betSlip.selections.map((s) => ({
-        matchId: s.matchId || "00000000-0000-0000-0000-000000000000",
-        marketId: s.marketId || "00000000-0000-0000-0000-000000000000",
+        matchId: String(s.matchId),
+        marketId: String(s.marketId || `${s.matchId}-1x2`),
         outcomeKey: s.selectionType,
         outcomeLabel: s.selectionLabel,
         odds: s.odds,
