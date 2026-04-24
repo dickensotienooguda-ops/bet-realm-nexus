@@ -211,12 +211,33 @@ function WalletPage() {
             />
           </div>
           <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-            <span>Min: {currency} 5</span>
+            <span>Min: {currency} 10</span>
             <span>Max: {currency} 250,000</span>
           </div>
 
-          <button onClick={handleDeposit} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground">
-            ⚡ Deposit {amount ? `${currency} ${amount}` : ""}
+          <p className="mb-2 mt-4 text-xs font-medium uppercase text-muted-foreground">M-PESA Phone Number</p>
+          <div className="flex items-center rounded-lg bg-input px-3 py-3">
+            <span className="text-sm font-bold text-primary">+254</span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="0712345678"
+              disabled={depositing}
+              className="ml-2 flex-1 bg-transparent text-lg font-bold outline-none placeholder:text-muted-foreground disabled:opacity-50"
+            />
+          </div>
+
+          <button
+            onClick={handleDeposit}
+            disabled={depositing || !amount || !phone}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          >
+            {depositing ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Waiting for payment…</>
+            ) : (
+              <>⚡ Deposit {amount ? `${currency} ${amount}` : ""}</>
+            )}
           </button>
 
           <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
