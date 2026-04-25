@@ -23,8 +23,8 @@ const walletTabs = [
   { id: "history", label: "History" },
 ];
 
-const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
-const MIN_DEPOSIT = 1000;
+const quickAmounts = [150, 500, 1000, 2000, 5000, 10000];
+const MIN_DEPOSIT = 150;
 
 function WalletPage() {
   const { session, user } = useAuth();
